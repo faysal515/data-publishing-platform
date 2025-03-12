@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Base colors - Light theme only */
+  --color-background: #ffffff;
+  --color-foreground: #171717;
+  
+  /* Color palette */
+  --color-blue-100: #dbeafe;
+  --color-blue-300: #93c5fd;
+  --color-blue-800: #1e40af;
+  
+  --color-green-100: #dcfce7;
+  --color-green-300: #86efac;
+  --color-green-800: #166534;
+  
+  --color-purple-100: #f3e8ff;
+  --color-purple-300: #d8b4fe;
+  --color-purple-800: #6b21a8;
+}
+
+body {
+  color: var(--color-foreground);
+  background: var(--color-background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Tag styles */
+.tag {
+  @apply px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.tag-blue {
+  background-color: var(--color-blue-100);
+  color: var(--color-blue-800);
+}
+
+.tag-green {
+  background-color: var(--color-green-100);
+  color: var(--color-green-800);
+}
+
+.tag-purple {
+  background-color: var(--color-purple-100);
+  color: var(--color-purple-800);
+}
