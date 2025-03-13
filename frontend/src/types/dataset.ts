@@ -15,6 +15,13 @@ export interface DatasetMetadata {
   category_ar?: string;
   subcategory_en?: string;
   subcategory_ar?: string;
+  status?: "draft" | "pending_review" | "approved" | "changes_requested";
+}
+
+export interface MetadataHistoryEntry {
+  comment: string;
+  created_by: string;
+  created_at: string;
 }
 
 export interface Dataset {
@@ -25,26 +32,12 @@ export interface Dataset {
   fileType: string;
   uploadDate: string;
   rowCount: number;
-  columns: Array<{
-    name: string;
-    dataType: string;
-    sampleValues: string[];
-    _id: string;
-  }>;
+  columns: string[];
   filePath: string;
   status: string;
-  metadata?: DatasetMetadata;
-  ai_metadata?: DatasetMetadata;
-  metadata_history: Array<{
-    metadata: DatasetMetadata;
-    created_by: string;
-    created_at: string;
-    comment?: string;
-  }>;
-  versions: any[];
-  createdAt: string;
-  updatedAt: string;
-  __v: number;
+  metadata: DatasetMetadata;
+  ai_metadata: DatasetMetadata;
+  metadata_history?: MetadataHistoryEntry[];
 }
 
 export interface ApiResponse<T> {

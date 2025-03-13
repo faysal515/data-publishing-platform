@@ -1,16 +1,20 @@
 import { useEffect, useState } from "react";
-import { Dataset } from "../types/dataset";
+import { Dataset, DatasetMetadata } from "../types/dataset";
 
 interface MetadataEditorProps {
   dataset: Dataset;
-  onSave?: (metadata: Dataset["metadata"]) => void;
+  onSave: (metadata: DatasetMetadata) => void;
+  readOnly?: boolean;
 }
 
 export default function MetadataEditor({
   dataset,
   onSave,
+  readOnly = false,
 }: MetadataEditorProps) {
-  const [metadata, setMetadata] = useState(dataset.metadata);
+  const [metadata, setMetadata] = useState<DatasetMetadata>(
+    dataset.metadata || {}
+  );
   const [isDirty, setIsDirty] = useState(false);
 
   // Load draft from local storage on mount
@@ -40,184 +44,262 @@ export default function MetadataEditor({
   }, [metadata, dataset._id, isDirty]);
 
   const handleChange = (
-    field: keyof Dataset["metadata"],
-    value: string | string[],
-    language?: "en" | "ar"
+    field: keyof DatasetMetadata,
+    value: string | string[]
   ) => {
+    if (readOnly) return;
     setIsDirty(true);
-    if (field === "tags") {
-      setMetadata((prev) => ({
-        ...prev,
-        tags: Array.isArray(value) ? value : [value],
-      }));
-    } else {
-      const fieldName = language
-        ? (`${field}_${language}` as keyof Dataset["metadata"])
-        : field;
-      setMetadata((prev) => ({
-        ...prev,
-        [fieldName]: value,
-      }));
-    }
+    setMetadata((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
-  const handleSubmit = () => {
-    if (onSave) {
-      onSave(metadata);
-      // Clear draft after successful save
-      localStorage.removeItem(`dataset_draft_${dataset._id}`);
-      setIsDirty(false);
-    }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (readOnly) return;
+    onSave(metadata);
+    // Clear draft after successful save
+    localStorage.removeItem(`dataset_draft_${dataset._id}`);
+    setIsDirty(false);
   };
 
   const handleDiscardDraft = () => {
     localStorage.removeItem(`dataset_draft_${dataset._id}`);
-    setMetadata(dataset.metadata);
+    setMetadata(dataset.metadata || {});
     setIsDirty(false);
   };
 
   return (
-    <div className="space-y-6">
-      {isDirty && (
-        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded relative">
-          <p className="font-medium">You have unsaved changes</p>
-          <div className="mt-2 flex space-x-4">
-            <button
-              onClick={handleSubmit}
-              className="bg-blue-100 text-blue-700 px-4 py-2 rounded hover:bg-blue-200"
-            >
-              Save Changes
-            </button>
-            <button
-              onClick={handleDiscardDraft}
-              className="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200"
-            >
-              Discard Draft
-            </button>
+    <form onSubmit={handleSubmit} className="space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative">
+        {/* English Section */}
+        <div className="space-y-6">
+          <div className="pb-3 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900">
+              English Metadata
+            </h3>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+                Title
+              </label>
+              <input
+                type="text"
+                value={metadata.title_en || ""}
+                onChange={(e) => handleChange("title_en", e.target.value)}
+                disabled={readOnly}
+                className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm bg-white
+                  ${
+                    readOnly
+                      ? "bg-gray-100 cursor-not-allowed"
+                      : "border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                  }
+                `}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+                Description
+              </label>
+              <textarea
+                value={metadata.description_en || ""}
+                onChange={(e) => handleChange("description_en", e.target.value)}
+                disabled={readOnly}
+                rows={4}
+                className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm bg-white
+                  ${
+                    readOnly
+                      ? "bg-gray-100 cursor-not-allowed"
+                      : "border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                  }
+                `}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+                Category
+              </label>
+              <input
+                type="text"
+                value={metadata.category_en || ""}
+                onChange={(e) => handleChange("category_en", e.target.value)}
+                disabled={readOnly}
+                className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm bg-white
+                  ${
+                    readOnly
+                      ? "bg-gray-100 cursor-not-allowed"
+                      : "border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                  }
+                `}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+                Subcategory
+              </label>
+              <input
+                type="text"
+                value={metadata.subcategory_en || ""}
+                onChange={(e) => handleChange("subcategory_en", e.target.value)}
+                disabled={readOnly}
+                className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm bg-white
+                  ${
+                    readOnly
+                      ? "bg-gray-100 cursor-not-allowed"
+                      : "border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                  }
+                `}
+              />
+            </div>
           </div>
         </div>
-      )}
 
-      <div className="grid grid-cols-2 gap-6">
-        {/* Title */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Title (English)
-          </label>
-          <input
-            type="text"
-            value={metadata?.title_en || ""}
-            onChange={(e) => handleChange("title", e.target.value, "en")}
-            className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1 text-right">
-            العنوان (بالعربية)
-          </label>
-          <input
-            type="text"
-            value={metadata?.title_ar || ""}
-            onChange={(e) => handleChange("title", e.target.value, "ar")}
-            className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
-            dir="rtl"
-          />
+        {/* Vertical Separator */}
+        <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 -ml-px">
+          <div className="w-px h-full bg-gray-200"></div>
         </div>
 
-        {/* Description */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description (English)
-          </label>
-          <textarea
-            value={metadata?.description_en || ""}
-            onChange={(e) => handleChange("description", e.target.value, "en")}
-            rows={4}
-            className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+        {/* Arabic Section */}
+        <div className="space-y-6">
+          <div className="pb-3 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900 text-right">
+              البيانات الوصفية العربية
+            </h3>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1.5 text-right">
+                العنوان
+              </label>
+              <input
+                type="text"
+                value={metadata.title_ar || ""}
+                onChange={(e) => handleChange("title_ar", e.target.value)}
+                disabled={readOnly}
+                className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm text-right bg-white
+                  ${
+                    readOnly
+                      ? "bg-gray-100 cursor-not-allowed"
+                      : "border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                  }
+                `}
+                dir="rtl"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1.5 text-right">
+                الوصف
+              </label>
+              <textarea
+                value={metadata.description_ar || ""}
+                onChange={(e) => handleChange("description_ar", e.target.value)}
+                disabled={readOnly}
+                rows={4}
+                className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm text-right bg-white
+                  ${
+                    readOnly
+                      ? "bg-gray-100 cursor-not-allowed"
+                      : "border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                  }
+                `}
+                dir="rtl"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1.5 text-right">
+                الفئة
+              </label>
+              <input
+                type="text"
+                value={metadata.category_ar || ""}
+                onChange={(e) => handleChange("category_ar", e.target.value)}
+                disabled={readOnly}
+                className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm text-right bg-white
+                  ${
+                    readOnly
+                      ? "bg-gray-100 cursor-not-allowed"
+                      : "border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                  }
+                `}
+                dir="rtl"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1.5 text-right">
+                الفئة الفرعية
+              </label>
+              <input
+                type="text"
+                value={metadata.subcategory_ar || ""}
+                onChange={(e) => handleChange("subcategory_ar", e.target.value)}
+                disabled={readOnly}
+                className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm text-right bg-white
+                  ${
+                    readOnly
+                      ? "bg-gray-100 cursor-not-allowed"
+                      : "border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                  }
+                `}
+                dir="rtl"
+              />
+            </div>
+          </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1 text-right">
-            الوصف (بالعربية)
-          </label>
-          <textarea
-            value={metadata?.description_ar || ""}
-            onChange={(e) => handleChange("description", e.target.value, "ar")}
-            rows={4}
-            className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
-            dir="rtl"
-          />
-        </div>
+      </div>
 
-        {/* Category */}
+      {/* Tags Section */}
+      <div className="pt-6 border-t border-gray-200">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Category (English)
-          </label>
-          <input
-            type="text"
-            value={metadata?.category_en || ""}
-            onChange={(e) => handleChange("category", e.target.value, "en")}
-            className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1 text-right">
-            الفئة (بالعربية)
-          </label>
-          <input
-            type="text"
-            value={metadata?.category_ar || ""}
-            onChange={(e) => handleChange("category", e.target.value, "ar")}
-            className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
-            dir="rtl"
-          />
-        </div>
-
-        {/* Subcategory */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Subcategory (English)
-          </label>
-          <input
-            type="text"
-            value={metadata?.subcategory_en || ""}
-            onChange={(e) => handleChange("subcategory", e.target.value, "en")}
-            className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1 text-right">
-            الفئة الفرعية (بالعربية)
-          </label>
-          <input
-            type="text"
-            value={metadata?.subcategory_ar || ""}
-            onChange={(e) => handleChange("subcategory", e.target.value, "ar")}
-            className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
-            dir="rtl"
-          />
-        </div>
-
-        {/* Tags */}
-        <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700">
             Tags
           </label>
           <input
             type="text"
-            value={metadata?.tags?.join(", ") || ""}
+            value={metadata.tags?.join(", ") || ""}
             onChange={(e) =>
               handleChange(
                 "tags",
                 e.target.value.split(",").map((tag) => tag.trim())
               )
             }
+            disabled={readOnly}
             placeholder="Enter tags separated by commas"
-            className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm
+              ${
+                readOnly
+                  ? "bg-gray-100 cursor-not-allowed"
+                  : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+              }
+            `}
           />
         </div>
       </div>
-    </div>
+
+      {/* Draft Controls */}
+      {!readOnly && isDirty && (
+        <div className="pt-6 border-t border-gray-200">
+          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded relative">
+            <p className="font-medium">You have unsaved changes</p>
+            <div className="mt-2 flex justify-end space-x-4">
+              <button
+                type="button"
+                onClick={handleDiscardDraft}
+                className="bg-white text-gray-700 px-4 py-2 rounded border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                Discard Draft
+              </button>
+              <button
+                type="submit"
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </form>
   );
 }

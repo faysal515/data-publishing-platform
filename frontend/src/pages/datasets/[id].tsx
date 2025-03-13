@@ -5,14 +5,17 @@ import { datasetService } from "../../services/datasetService";
 import MetadataEditor from "../../components/MetadataEditor";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function DatasetDetailPage() {
   const router = useRouter();
   const { id } = router.query;
+  const { role } = useAuth();
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [reviewComment, setReviewComment] = useState("");
 
   useEffect(() => {
     const fetchDataset = async () => {
@@ -49,6 +52,61 @@ export default function DatasetDetailPage() {
         error.response?.data?.error?.message ||
           "Error saving metadata. Please try again."
       );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!dataset?._id) return;
+
+    try {
+      setIsSaving(true);
+      const response = await datasetService.updateMetadata(dataset._id, {
+        ...dataset.metadata,
+        status: "approved",
+      });
+      setDataset(response.data);
+      toast.success("Dataset approved successfully");
+    } catch (error: any) {
+      console.error("Error approving dataset:", error);
+      toast.error("Error approving dataset. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRequestChanges = async () => {
+    if (!dataset?._id || !reviewComment.trim()) {
+      toast.error("Please provide a comment for the requested changes");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const response = await datasetService.updateMetadata(dataset._id, {
+        ...dataset.metadata,
+        status: "changes_requested",
+      });
+
+      const updatedDataset = {
+        ...response.data,
+        metadata_history: [
+          ...(dataset.metadata_history || []),
+          {
+            comment: reviewComment,
+            created_by: "admin",
+            created_at: new Date().toISOString(),
+          },
+        ],
+      };
+
+      setDataset(updatedDataset);
+      setReviewComment("");
+      toast.success("Changes requested successfully");
+    } catch (error: any) {
+      console.error("Error requesting changes:", error);
+      toast.error("Error requesting changes. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -125,27 +183,78 @@ export default function DatasetDetailPage() {
           <div className="px-6 py-4 border-b">
             <h2 className="text-xl font-semibold">Dataset Information</h2>
           </div>
-          <div className="px-6 py-4 space-y-4">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="font-medium">File Name:</span>{" "}
-                {dataset.originalFilename}
+          <div className="px-6 py-4">
+            <div className="grid grid-cols-3 gap-6">
+              {/* First Column */}
+              <div className="space-y-4 text-sm">
+                <div>
+                  <span className="font-medium">File Name:</span>{" "}
+                  {dataset.originalFilename}
+                </div>
+                <div>
+                  <span className="font-medium">File Type:</span>{" "}
+                  {dataset.fileType.toUpperCase()}
+                </div>
+                <div>
+                  <span className="font-medium">File Size:</span>{" "}
+                  {(dataset.fileSize / 1024 / 1024).toFixed(2)} MB
+                </div>
               </div>
-              <div>
-                <span className="font-medium">File Type:</span>{" "}
-                {dataset.fileType.toUpperCase()}
+
+              {/* Second Column */}
+              <div className="space-y-4 text-sm">
+                <div>
+                  <span className="font-medium">Row Count:</span>{" "}
+                  {dataset.rowCount.toLocaleString()}
+                </div>
+                <div>
+                  <span className="font-medium">Upload Date:</span>{" "}
+                  {new Date(dataset.uploadDate).toLocaleDateString()}
+                </div>
+                <div>
+                  <span className="font-medium">Status:</span>{" "}
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      dataset.status === "metadata_generated"
+                        ? "bg-green-100 text-green-800"
+                        : dataset.status === "processed"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-gray-100 text-gray-800"
+                    }`}
+                  >
+                    {dataset.status}
+                  </span>
+                </div>
               </div>
-              <div>
-                <span className="font-medium">File Size:</span>{" "}
-                {(dataset.fileSize / 1024 / 1024).toFixed(2)} MB
-              </div>
-              <div>
-                <span className="font-medium">Row Count:</span>{" "}
-                {dataset.rowCount.toLocaleString()}
-              </div>
-              <div>
-                <span className="font-medium">Upload Date:</span>{" "}
-                {new Date(dataset.uploadDate).toLocaleDateString()}
+
+              {/* Third Column - Review History */}
+              <div className="border-l pl-6">
+                <h3 className="text-sm font-medium text-gray-900 mb-4">
+                  Review History
+                </h3>
+                <div className="space-y-3 max-h-[200px] overflow-y-auto">
+                  {dataset?.metadata_history &&
+                  dataset.metadata_history.length > 0 ? (
+                    dataset.metadata_history.map((history, index) => (
+                      <div
+                        key={index}
+                        className="bg-gray-50 p-3 rounded-lg text-sm"
+                      >
+                        <div className="flex justify-between text-xs text-gray-500 mb-1">
+                          <span>By {history.created_by}</span>
+                          <span>
+                            {new Date(history.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-gray-700">{history.comment}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      No review history yet
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -156,9 +265,53 @@ export default function DatasetDetailPage() {
             <h2 className="text-xl font-semibold">Metadata Editor</h2>
           </div>
           <div className="px-6 py-4">
-            <MetadataEditor dataset={dataset} onSave={handleSaveMetadata} />
-            {isSaving && (
-              <div className="mt-4 text-blue-600">Saving changes...</div>
+            {role === "editor" ? (
+              <>
+                <MetadataEditor
+                  dataset={dataset}
+                  onSave={handleSaveMetadata}
+                  readOnly={false}
+                />
+                {isSaving && (
+                  <div className="mt-4 text-blue-600">Saving changes...</div>
+                )}
+              </>
+            ) : (
+              <div className="space-y-6">
+                <MetadataEditor
+                  dataset={dataset}
+                  onSave={handleSaveMetadata}
+                  readOnly={true}
+                />
+                <div className="border-t pt-4">
+                  <h3 className="text-lg font-medium mb-4">Review Actions</h3>
+                  <div className="space-y-4">
+                    <textarea
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                      placeholder="Enter review comments here..."
+                      className="w-full px-3 py-2 border rounded-md"
+                      rows={4}
+                    />
+                    <div className="flex space-x-4">
+                      <button
+                        onClick={handleApprove}
+                        disabled={isSaving}
+                        className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:opacity-50"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={handleRequestChanges}
+                        disabled={isSaving || !reviewComment.trim()}
+                        className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 disabled:opacity-50"
+                      >
+                        Request Changes
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </div>

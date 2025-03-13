@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import Image from "next/image";
+import RoleToggle from "./RoleToggle";
 
 export default function Navbar() {
   const router = useRouter();
@@ -18,8 +19,11 @@ export default function Navbar() {
               </div>
             </Link>
           </div>
+          <div className="flex items-center">
+            <RoleToggle />
+          </div>
 
-          <div className="flex space-x-8">
+          <div className="flex items-center space-x-8">
             <Link
               href="/"
               className={`${
