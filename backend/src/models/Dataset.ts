@@ -8,6 +8,27 @@ export interface IColumn {
   sampleValues?: string[];
 }
 
+// Define the metadata interface
+interface IMetadata {
+  title_en?: string;
+  title_ar?: string;
+  description_en?: string;
+  description_ar?: string;
+  tags?: string[];
+  category_en?: string;
+  category_ar?: string;
+  subcategory_en?: string;
+  subcategory_ar?: string;
+}
+
+// Define the metadata history entry interface
+interface IMetadataHistoryEntry {
+  metadata: IMetadata;
+  created_by: string;
+  created_at: Date;
+  comment?: string;
+}
+
 // Define the dataset interface
 export interface IDataset extends Document {
   _id: mongoose.Types.ObjectId;
@@ -20,17 +41,8 @@ export interface IDataset extends Document {
   columns: IColumn[];
   filePath: string;
   status: DatasetStatus;
-  metadata?: {
-    title_en?: string;
-    title_ar?: string;
-    description_en?: string;
-    description_ar?: string;
-    tags?: string[];
-    category_en?: string;
-    category_ar?: string;
-    subcategory_en?: string;
-    subcategory_ar?: string;
-  };
+  metadata?: IMetadata;
+  metadata_history?: IMetadataHistoryEntry[];
   versions?: mongoose.Types.ObjectId[];
 }
 
@@ -67,6 +79,24 @@ const DatasetSchema = new Schema<IDataset>(
       subcategory_en: { type: String },
       subcategory_ar: { type: String },
     },
+    metadata_history: [
+      {
+        metadata: {
+          title_en: { type: String },
+          title_ar: { type: String },
+          description_en: { type: String },
+          description_ar: { type: String },
+          tags: [{ type: String }],
+          category_en: { type: String },
+          category_ar: { type: String },
+          subcategory_en: { type: String },
+          subcategory_ar: { type: String },
+        },
+        created_by: { type: String, required: true },
+        created_at: { type: Date, default: Date.now },
+        comment: { type: String },
+      },
+    ],
     versions: [{ type: Schema.Types.ObjectId, ref: "Dataset" }],
   },
   {

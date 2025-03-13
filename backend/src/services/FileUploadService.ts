@@ -133,6 +133,14 @@ export class FileUploadService {
               metadata: metadata.object,
               status: DATASET_STATUS.METADATA_GENERATED,
             },
+            $push: {
+              metadata_history: {
+                metadata: metadata.object,
+                created_by: "AI",
+                created_at: new Date(),
+                comment: "",
+              },
+            },
           });
           logger.info(`Metadata generated for dataset: ${dataset._id}`);
         })
