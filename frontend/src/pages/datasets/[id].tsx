@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { Dataset } from "../../types/dataset";
 import { datasetService } from "../../services/datasetService";
 import MetadataEditor from "../../components/MetadataEditor";
+import { StatusBadge } from "../../components/StatusBadge";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../contexts/AuthContext";
@@ -36,14 +37,16 @@ export default function DatasetDetailPage() {
   }, [id]);
 
   const handleSaveMetadata = async (metadata: Dataset["metadata"]) => {
-    if (!dataset?._id) return;
+    if (!dataset?._id || !role) return;
 
     try {
       setIsSaving(true);
-      const response = await datasetService.updateMetadata(
-        dataset._id,
-        metadata
-      );
+      const response = await datasetService.updateMetadata(dataset._id, {
+        ...metadata,
+        status: "under_review",
+        role: role,
+        // comment: "Metadata updated and submitted for review",
+      });
       setDataset(response.data);
       toast.success("Metadata saved successfully and sent for review");
     } catch (error: any) {
@@ -58,15 +61,22 @@ export default function DatasetDetailPage() {
   };
 
   const handleApprove = async () => {
-    if (!dataset?._id) return;
+    if (!dataset?._id || !role) return;
+    if (role === "admin" && !reviewComment.trim()) {
+      toast.error("Please provide a comment for approval");
+      return;
+    }
 
     try {
       setIsSaving(true);
       const response = await datasetService.updateMetadata(dataset._id, {
         ...dataset.metadata,
         status: "approved",
+        role: role,
+        comment: reviewComment.trim() || "Metadata approved",
       });
       setDataset(response.data);
+      setReviewComment("");
       toast.success("Dataset approved successfully");
     } catch (error: any) {
       console.error("Error approving dataset:", error);
@@ -77,7 +87,8 @@ export default function DatasetDetailPage() {
   };
 
   const handleRequestChanges = async () => {
-    if (!dataset?._id || !reviewComment.trim()) {
+    if (!dataset?._id || !role) return;
+    if (!reviewComment.trim()) {
       toast.error("Please provide a comment for the requested changes");
       return;
     }
@@ -87,21 +98,10 @@ export default function DatasetDetailPage() {
       const response = await datasetService.updateMetadata(dataset._id, {
         ...dataset.metadata,
         status: "changes_requested",
+        role: role,
+        comment: reviewComment,
       });
-
-      const updatedDataset = {
-        ...response.data,
-        metadata_history: [
-          ...(dataset.metadata_history || []),
-          {
-            comment: reviewComment,
-            created_by: "admin",
-            created_at: new Date().toISOString(),
-          },
-        ],
-      };
-
-      setDataset(updatedDataset);
+      setDataset(response.data);
       setReviewComment("");
       toast.success("Changes requested successfully");
     } catch (error: any) {
@@ -166,17 +166,7 @@ export default function DatasetDetailPage() {
             </svg>
             Back to Datasets
           </Link>
-          <span
-            className={`px-3 py-1 rounded-full text-sm ${
-              dataset.status === "metadata_generated"
-                ? "bg-green-100 text-green-800"
-                : dataset.status === "processed"
-                ? "bg-yellow-100 text-yellow-800"
-                : "bg-gray-100 text-gray-800"
-            }`}
-          >
-            {dataset.status}
-          </span>
+          <StatusBadge status={dataset.status} />
         </div>
 
         <div className="bg-white shadow rounded-lg">
@@ -213,17 +203,7 @@ export default function DatasetDetailPage() {
                 </div>
                 <div>
                   <span className="font-medium">Status:</span>{" "}
-                  <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      dataset.status === "metadata_generated"
-                        ? "bg-green-100 text-green-800"
-                        : dataset.status === "processed"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
-                  >
-                    {dataset.status}
-                  </span>
+                  <StatusBadge status={dataset.status} size="xs" />
                 </div>
               </div>
 

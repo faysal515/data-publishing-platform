@@ -587,23 +587,40 @@ export class FileUploadService {
     }
 
     try {
-      // Update the dataset with new metadata and status
+      let updateOperation: any = {
+        $set: {
+          metadata: metadata,
+          status: metadata.status,
+        },
+      };
+
+      const metadataHistory = dataset.metadata_history || [];
+
+      // If status is changes_requested and there's existing history
+      if (
+        metadata.status === DATASET_STATUS.CHANGES_REQUESTED &&
+        metadataHistory.length > 0
+      ) {
+        // Update the last history entry with the review comment
+        const lastHistoryIndex = metadataHistory.length - 1;
+        updateOperation.$set[`metadata_history.${lastHistoryIndex}.comment`] =
+          metadata.comment;
+      } else {
+        // Add new history entry
+        const { role, comment, status, ...metadataFields } = metadata;
+        updateOperation.$push = {
+          metadata_history: {
+            metadata: metadataFields,
+            created_by: role,
+            created_at: new Date(),
+            comment: comment,
+          },
+        };
+      }
+
       const updatedDataset = await Dataset.findByIdAndUpdate(
         id,
-        {
-          $set: {
-            metadata: metadata,
-            status: DATASET_STATUS.UNDER_REVIEW,
-          },
-          $push: {
-            metadata_history: {
-              metadata: metadata,
-              created_by: "editor",
-              created_at: new Date(),
-              comment: "Metadata updated by editor",
-            },
-          },
-        },
+        updateOperation,
         { new: true }
       );
 

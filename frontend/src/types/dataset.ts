@@ -15,7 +15,9 @@ export interface DatasetMetadata {
   category_ar?: string;
   subcategory_en?: string;
   subcategory_ar?: string;
-  status?: "draft" | "pending_review" | "approved" | "changes_requested";
+  status?: "approved" | "changes_requested" | "under_review";
+  role?: "editor" | "admin" | "ai";
+  comment?: string;
 }
 
 export interface MetadataHistoryEntry {
@@ -34,7 +36,7 @@ export interface Dataset {
   rowCount: number;
   columns: string[];
   filePath: string;
-  status: string;
+  status: DatasetStatus;
   metadata: DatasetMetadata;
   ai_metadata: DatasetMetadata;
   metadata_history?: MetadataHistoryEntry[];
@@ -45,3 +47,12 @@ export interface ApiResponse<T> {
   message?: string;
   data: T;
 }
+
+export type DatasetStatus =
+  | "uploaded"
+  | "processed"
+  | "metadata_generated"
+  | "metadata_failed"
+  | "under_review"
+  | "changes_requested"
+  | "approved";

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Dataset } from "../types/dataset";
 import Link from "next/link";
+import { StatusBadge } from "./StatusBadge";
 
 interface DatasetListProps {
   datasets: Dataset[];
@@ -65,17 +66,7 @@ export default function DatasetList({ datasets, isLoading }: DatasetListProps) {
                   </p>
                 )}
               </div>
-              <span
-                className={`px-2 py-1 rounded-full text-sm ${
-                  dataset.status === "metadata_generated"
-                    ? "bg-green-100 text-green-800"
-                    : dataset.status === "processed"
-                    ? "bg-yellow-100 text-yellow-800"
-                    : "bg-gray-100 text-gray-800"
-                }`}
-              >
-                {dataset.status}
-              </span>
+              <StatusBadge status={dataset.status} size="xs" />
             </div>
 
             <div className="mt-2 text-sm text-gray-600">

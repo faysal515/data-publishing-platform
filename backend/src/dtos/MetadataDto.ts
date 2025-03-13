@@ -4,7 +4,21 @@ import {
   IsOptional,
   MaxLength,
   ArrayMaxSize,
+  IsEnum,
+  ValidateIf,
 } from "class-validator";
+
+export enum MetadataStatus {
+  PENDING_REVIEW = "under_review",
+  APPROVED = "approved",
+  CHANGES_REQUESTED = "changes_requested",
+}
+
+export enum MetadataRole {
+  EDITOR = "editor",
+  ADMIN = "admin",
+  AI = "ai",
+}
 
 export class MetadataDto {
   @IsOptional()
@@ -62,4 +76,16 @@ export class MetadataDto {
     message: "Subcategory (Arabic) cannot exceed 100 characters",
   })
   subcategory_ar?: string;
+
+  @IsOptional()
+  @IsEnum(MetadataStatus, { message: "Invalid status value" })
+  status?: MetadataStatus;
+
+  @IsEnum(MetadataRole, { message: "Role is required and must be valid" })
+  role!: MetadataRole;
+
+  @ValidateIf((o) => o.role === MetadataRole.ADMIN)
+  @IsString({ message: "Comment is required for admin actions" })
+  @MaxLength(1000, { message: "Comment cannot exceed 1000 characters" })
+  comment?: string;
 }
