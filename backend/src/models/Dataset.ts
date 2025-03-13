@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { DATASET_STATUS, DatasetStatus } from "../constants";
 
 // Define the column information interface
 export interface IColumn {
@@ -18,21 +19,17 @@ export interface IDataset extends Document {
   rowCount: number;
   columns: IColumn[];
   filePath: string;
-  status:
-    | "uploaded"
-    | "processed"
-    | "metadata_generated"
-    | "under_review"
-    | "published";
+  status: DatasetStatus;
   metadata?: {
-    title?: string;
-    description?: string;
+    title_en?: string;
+    title_ar?: string;
+    description_en?: string;
+    description_ar?: string;
     tags?: string[];
-    category?: string;
-    titleAr?: string;
-    descriptionAr?: string;
-    tagsAr?: string[];
-    categoryAr?: string;
+    category_en?: string;
+    category_ar?: string;
+    subcategory_en?: string;
+    subcategory_ar?: string;
   };
   versions?: mongoose.Types.ObjectId[];
 }
@@ -56,24 +53,19 @@ const DatasetSchema = new Schema<IDataset>(
     filePath: { type: String, required: true },
     status: {
       type: String,
-      enum: [
-        "uploaded",
-        "processed",
-        "metadata_generated",
-        "under_review",
-        "published",
-      ],
-      default: "uploaded",
+      enum: Object.values(DATASET_STATUS),
+      default: DATASET_STATUS.UPLOADED,
     },
     metadata: {
-      title: { type: String },
-      description: { type: String },
+      title_en: { type: String },
+      title_ar: { type: String },
+      description_en: { type: String },
+      description_ar: { type: String },
       tags: [{ type: String }],
-      category: { type: String },
-      titleAr: { type: String },
-      descriptionAr: { type: String },
-      tagsAr: [{ type: String }],
-      categoryAr: { type: String },
+      category_en: { type: String },
+      category_ar: { type: String },
+      subcategory_en: { type: String },
+      subcategory_ar: { type: String },
     },
     versions: [{ type: Schema.Types.ObjectId, ref: "Dataset" }],
   },

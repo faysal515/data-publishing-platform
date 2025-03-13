@@ -7,6 +7,8 @@ import * as XLSX from "xlsx";
 import { ApiError } from "../utils/ApiError";
 import { Dataset, IColumn, IDataset } from "../models/Dataset";
 import logger from "../utils/logger";
+import { generateDatasetMetadata } from "./aiService";
+import { DATASET_STATUS } from "../constants";
 
 @Service()
 export class FileUploadService {
@@ -105,6 +107,51 @@ export class FileUploadService {
       }
       logger.error(`Error processing file: ${error.message}`, { error });
       throw new ApiError(500, `Error processing file: ${error.message}`);
+    }
+  }
+
+  private async triggerMetadataGeneration(dataset: IDataset): Promise<void> {
+    try {
+      // Get sample data for AI processing
+      const sampleData = dataset.columns.map((col) => ({
+        name: col.name,
+        type: col.dataType,
+        samples: col.sampleValues,
+      }));
+
+      // Convert sample data to string format with XML-like tags
+      const datasetContent =
+        `<filename>${dataset.originalFilename}</filename>\n\n` +
+        `<data>${JSON.stringify(sampleData, null, 2)}</data>`;
+
+      // Fire and forget - don't await
+      generateDatasetMetadata(datasetContent)
+        .then(async (metadata) => {
+          // Update dataset with generated metadata
+          await Dataset.findByIdAndUpdate(dataset._id, {
+            $set: {
+              metadata: metadata.object,
+              status: DATASET_STATUS.METADATA_GENERATED,
+            },
+          });
+          logger.info(`Metadata generated for dataset: ${dataset._id}`);
+        })
+        .catch((error) => {
+          logger.error(
+            `Error generating metadata for dataset ${dataset._id}:`,
+            error
+          );
+          // Update status to indicate metadata generation failed
+          Dataset.findByIdAndUpdate(dataset._id, {
+            $set: { status: DATASET_STATUS.METADATA_FAILED },
+          }).catch((err) =>
+            logger.error(`Error updating dataset status: ${err.message}`)
+          );
+        });
+
+      logger.info(`Triggered metadata generation for dataset: ${dataset._id}`);
+    } catch (error: any) {
+      logger.error(`Error triggering metadata generation: ${error.message}`);
     }
   }
 
@@ -224,11 +271,15 @@ export class FileUploadService {
               rowCount,
               columns: columnsMeta,
               filePath,
-              status: "processed",
+              status: DATASET_STATUS.PROCESSED,
             });
 
             await dataset.save();
             logger.info(`Dataset saved to database: ${dataset._id}`);
+
+            // Trigger metadata generation asynchronously
+            this.triggerMetadataGeneration(dataset.toObject());
+
             resolve(dataset.toObject());
           } catch (error: any) {
             logger.error(`Error saving CSV dataset: ${error.message}`, {
@@ -380,11 +431,15 @@ export class FileUploadService {
         rowCount,
         columns: columnsMeta,
         filePath,
-        status: "processed",
+        status: DATASET_STATUS.PROCESSED,
       });
 
       await dataset.save();
       logger.info(`Dataset saved to database: ${dataset._id}`);
+
+      // Trigger metadata generation asynchronously
+      this.triggerMetadataGeneration(dataset.toObject());
+
       return dataset.toObject();
     } catch (error: any) {
       if (error instanceof ApiError) {
