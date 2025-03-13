@@ -8,6 +8,7 @@ import {
   Body,
   HttpError,
   QueryParams,
+  Put,
 } from "routing-controllers";
 import { Service } from "typedi";
 import { FileUploadService } from "../services/FileUploadService";
@@ -16,6 +17,7 @@ import { ApiError } from "../utils/ApiError";
 import multer from "multer";
 import logger from "../utils/logger";
 import { PaginationDto } from "../dtos/PaginationDto";
+import { MetadataDto } from "../dtos/MetadataDto";
 
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -145,6 +147,30 @@ export class DatasetController {
       }
       logger.error(`Error deleting dataset ${id}: ${error.message}`, { error });
       throw new HttpError(500, `Error deleting dataset: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update dataset metadata
+   */
+  @Put("/:id/metadata")
+  async updateMetadata(@Param("id") id: string, @Body() metadata: MetadataDto) {
+    logger.info(`Request to update metadata for dataset: ${id}`);
+
+    try {
+      const dataset = await this.fileUploadService.updateMetadata(id, metadata);
+      return apiResponse(dataset, "Metadata updated successfully");
+    } catch (error: any) {
+      if (error instanceof ApiError) {
+        throw new HttpError(error.status, error.message);
+      }
+      logger.error(
+        `Error updating metadata for dataset ${id}: ${error.message}`,
+        {
+          error,
+        }
+      );
+      throw new HttpError(500, `Error updating metadata: ${error.message}`);
     }
   }
 }

@@ -4,6 +4,7 @@ import { Dataset } from "../../types/dataset";
 import { datasetService } from "../../services/datasetService";
 import MetadataEditor from "../../components/MetadataEditor";
 import Link from "next/link";
+import { toast } from "react-hot-toast";
 
 export default function DatasetDetailPage() {
   const router = useRouter();
@@ -11,6 +12,7 @@ export default function DatasetDetailPage() {
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const fetchDataset = async () => {
@@ -31,8 +33,25 @@ export default function DatasetDetailPage() {
   }, [id]);
 
   const handleSaveMetadata = async (metadata: Dataset["metadata"]) => {
-    // TODO: Implement API call to save metadata
-    console.log("Saving metadata:", metadata);
+    if (!dataset?._id) return;
+
+    try {
+      setIsSaving(true);
+      const response = await datasetService.updateMetadata(
+        dataset._id,
+        metadata
+      );
+      setDataset(response.data);
+      toast.success("Metadata saved successfully and sent for review");
+    } catch (error: any) {
+      console.error("Error saving metadata:", error);
+      toast.error(
+        error.response?.data?.error?.message ||
+          "Error saving metadata. Please try again."
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (isLoading) {
@@ -138,6 +157,9 @@ export default function DatasetDetailPage() {
           </div>
           <div className="px-6 py-4">
             <MetadataEditor dataset={dataset} onSave={handleSaveMetadata} />
+            {isSaving && (
+              <div className="mt-4 text-blue-600">Saving changes...</div>
+            )}
           </div>
         </div>
       </div>

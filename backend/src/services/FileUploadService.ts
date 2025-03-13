@@ -9,6 +9,7 @@ import { Dataset, IColumn, IDataset } from "../models/Dataset";
 import logger from "../utils/logger";
 import { generateDatasetMetadata } from "./aiService";
 import { DATASET_STATUS } from "../constants";
+import { MetadataDto } from "../dtos/MetadataDto";
 
 @Service()
 export class FileUploadService {
@@ -571,5 +572,50 @@ export class FileUploadService {
 
     await Dataset.findByIdAndDelete(id);
     logger.info(`Dataset deleted from database: ${id}`);
+  }
+
+  /**
+   * Update dataset metadata and add to history
+   */
+  async updateMetadata(id: string, metadata: MetadataDto): Promise<IDataset> {
+    logger.debug(`Updating metadata for dataset: ${id}`);
+
+    const dataset = await Dataset.findById(id);
+    if (!dataset) {
+      logger.warn(`Dataset not found: ${id}`);
+      throw new ApiError(404, "Dataset not found");
+    }
+
+    try {
+      // Update the dataset with new metadata and status
+      const updatedDataset = await Dataset.findByIdAndUpdate(
+        id,
+        {
+          $set: {
+            metadata: metadata,
+            status: DATASET_STATUS.UNDER_REVIEW,
+          },
+          $push: {
+            metadata_history: {
+              metadata: metadata,
+              created_by: "editor",
+              created_at: new Date(),
+              comment: "Metadata updated by editor",
+            },
+          },
+        },
+        { new: true }
+      );
+
+      if (!updatedDataset) {
+        throw new ApiError(404, "Dataset not found after update");
+      }
+
+      logger.info(`Metadata updated for dataset: ${id}`);
+      return updatedDataset.toObject();
+    } catch (error: any) {
+      logger.error(`Error updating metadata: ${error.message}`, { error });
+      throw new ApiError(500, `Error updating metadata: ${error.message}`);
+    }
   }
 }

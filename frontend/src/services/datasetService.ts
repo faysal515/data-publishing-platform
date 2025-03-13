@@ -45,4 +45,16 @@ export const datasetService = {
 
     return response.data;
   },
+
+  async updateMetadata(
+    id: string,
+    metadata: Dataset["metadata"]
+  ): Promise<ApiResponse<Dataset>> {
+    const response = await axios.put<ApiResponse<Dataset>>(
+      `${API_BASE_URL}/datasets/${id}/metadata`,
+      metadata
+    );
+
+    return response.data;
+  },
 };

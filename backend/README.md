@@ -1,3 +1,5 @@
+Todo - separation file upload service and dataset service
+
 # Dataset Publishing Platform Backend
 
 This is the backend for the Dataset Publishing Platform, built with Express.js, TypeScript, routing-controllers, and MongoDB.
@@ -9,6 +11,7 @@ This is the backend for the Dataset Publishing Platform, built with Express.js, 
 - Dataset management (CRUD operations) with pagination
 - Error handling
 - Comprehensive logging system
+- Automated bilingual metadata generation (English/Arabic)
 
 ## Prerequisites
 
@@ -110,6 +113,58 @@ After changing the log level, restart the server for the changes to take effect.
 - `src/middlewares/` - Express middlewares
 - `src/utils/` - Utility functions
 - `src/config/` - Configuration files
+
+## Metadata Generation System
+
+The platform implements an asynchronous metadata generation system using Azure OpenAI. Here's how it works:
+
+### Current Implementation
+
+1. **Upload Flow**:
+   - User uploads a dataset file
+   - System processes and validates the file
+   - File is saved with status "PROCESSED"
+   - Metadata generation is triggered asynchronously
+   - Status updates to "METADATA_GENERATED" or "METADATA_FAILED"
+
+2. **Metadata Generation**:
+   - Uses Azure OpenAI to analyze dataset content
+   - Generates bilingual metadata (English/Arabic)
+   - Includes titles, descriptions, tags, and categories
+   - Processes column names and sample values for context
+
+3. **Status Tracking**:
+   - UPLOADED: Initial file upload
+   - PROCESSED: File validated and saved
+   - METADATA_GENERATED: AI generation successful
+   - METADATA_FAILED: AI generation failed
+   - UNDER_REVIEW: Pending human review
+   - PUBLISHED: Dataset publicly available
+
+### Alternative Approaches (Not Implemented)
+
+1. **Queue-Based System**:
+   - Using message queues (e.g., Bull, RabbitMQ)
+   - Better handling of high load
+   - Retry mechanisms
+   - Job prioritization
+   - Progress tracking
+   - Dashboard for monitoring
+
+2. **Webhook System**:
+   - Separate metadata generation service
+   - Callback URLs for status updates
+   - Better service isolation
+   - Independent scaling
+   - Cross-service communication
+
+3. **Batch Processing**:
+   - Cron jobs for periodic processing
+   - Batch multiple datasets
+   - Resource optimization
+   - Scheduled processing windows
+
+Current implementation chose simplicity and immediate feedback over complex architectures. For production at scale, consider implementing a queue-based system with proper retry mechanisms and monitoring.
 
 ## Error Handling
 
