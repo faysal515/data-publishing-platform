@@ -509,25 +509,57 @@ export class FileUploadService {
    * Get all datasets with pagination
    * @param page Page number (1-indexed)
    * @param limit Number of items per page
+   * @param search Search term
+   * @param categories Array of category filters
    * @returns Object containing datasets array and total count
    */
   async getAllDatasets(
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
+    search?: string,
+    categories?: string[]
   ): Promise<{ datasets: IDataset[]; total: number }> {
     logger.debug(
-      `Fetching datasets with pagination: page ${page}, limit ${limit}`
+      `Fetching datasets with pagination: page ${page}, limit ${limit}, search: ${search}, categories: ${categories?.join(
+        ", "
+      )}`
     );
+
+    // Build query
+    const query: any = {};
+
+    // Add text search if search term is provided
+    if (search) {
+      query.$text = { $search: search };
+    }
+
+    // Add categories filter if provided
+    if (categories && categories.length > 0) {
+      query.$or = categories.map((category) => ({
+        $or: [
+          { "metadata.category_en": category },
+          { "metadata.category_ar": category },
+        ],
+      }));
+    }
 
     // Calculate skip value for pagination
     const skip = (page - 1) * limit;
 
     // Execute count query for total
-    const total = await Dataset.countDocuments();
+    const total = await Dataset.countDocuments(query);
 
     // Execute find query with pagination
-    const datasets = await Dataset.find()
-      .sort({ createdAt: -1 })
+    // If using text search, sort by text score first, then creation date
+    const sortCriteria: any = search
+      ? { score: { $meta: "textScore" }, createdAt: -1 }
+      : { createdAt: -1 };
+
+    const datasets = await Dataset.find(
+      query,
+      search ? { score: { $meta: "textScore" } } : {} // Include text score in results if searching
+    )
+      .sort(sortCriteria)
       .skip(skip)
       .limit(limit);
 

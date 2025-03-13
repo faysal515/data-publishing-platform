@@ -150,5 +150,20 @@ const DatasetSchema = new Schema<IDataset>(
   }
 );
 
+// Add text indexes for searchable fields
+DatasetSchema.index({
+  "metadata.title_en": "text",
+  "metadata.title_ar": "text",
+  "metadata.description_en": "text",
+  "metadata.description_ar": "text",
+  "metadata.tags": "text",
+  originalFilename: "text",
+  fileType: "text",
+});
+
+// Add regular indexes for category fields for exact matching
+DatasetSchema.index({ "metadata.category_en": 1 });
+DatasetSchema.index({ "metadata.category_ar": 1 });
+
 // Create and export the model
 export const Dataset = mongoose.model<IDataset>("Dataset", DatasetSchema);

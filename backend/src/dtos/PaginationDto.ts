@@ -1,17 +1,43 @@
-import { IsInt, IsOptional, Max, Min } from "class-validator";
-import { Type } from "class-transformer";
+import {
+  IsOptional,
+  IsNumber,
+  Min,
+  Max,
+  IsString,
+  IsArray,
+} from "class-validator";
+import { Transform } from "class-transformer";
 
 export class PaginationDto {
   @IsOptional()
-  @Type(() => Number) // Transform string to number
-  @IsInt({ message: "Page must be an integer" })
-  @Min(1, { message: "Page must be at least 1" })
+  @Transform(({ value }) => parseInt(value))
+  @IsNumber()
+  @Min(1)
   page: number = 1;
 
   @IsOptional()
-  @Type(() => Number) // Transform string to number
-  @IsInt({ message: "Limit must be an integer" })
-  @Min(1, { message: "Limit must be at least 1" })
-  @Max(100, { message: "Limit cannot exceed 100" })
+  @Transform(({ value }) => parseInt(value))
+  @IsNumber()
+  @Min(1)
+  @Max(100)
   limit: number = 10;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsArray()
+  @Transform(({ value }) => {
+    // Handle both string and array inputs
+    if (typeof value === "string") {
+      return value
+        .split(",")
+        .map((cat) => cat.trim())
+        .filter((cat) => cat.length > 0);
+    }
+    return value;
+  })
+  @IsString({ each: true })
+  categories?: string[];
 }

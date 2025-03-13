@@ -78,7 +78,9 @@ export class DatasetController {
     try {
       const { datasets, total } = await this.fileUploadService.getAllDatasets(
         paginationDto.page,
-        paginationDto.limit
+        paginationDto.limit,
+        paginationDto.search,
+        paginationDto.categories
       );
 
       logger.debug(
