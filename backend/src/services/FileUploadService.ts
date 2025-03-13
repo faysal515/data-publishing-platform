@@ -547,6 +547,7 @@ export class FileUploadService {
     const skip = (page - 1) * limit;
 
     // Execute count query for total
+    logger.debug(`Counting datasets with query: ${JSON.stringify(query)}`);
     const total = await Dataset.countDocuments(query);
 
     // Execute find query with pagination

@@ -23,7 +23,7 @@ export default function RoleToggle() {
             : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
         }`}
       >
-        Admin
+        Supervisor
       </button>
     </div>
   );

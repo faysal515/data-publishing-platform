@@ -71,9 +71,7 @@ export class DatasetController {
    */
   @Get("/")
   async getAllDatasets(@QueryParams() paginationDto: PaginationDto) {
-    logger.info(
-      `Request to get datasets (page: ${paginationDto.page}, limit: ${paginationDto.limit})`
-    );
+    logger.info(`Request to get datasets ${JSON.stringify(paginationDto)}`);
 
     try {
       const { datasets, total } = await this.fileUploadService.getAllDatasets(

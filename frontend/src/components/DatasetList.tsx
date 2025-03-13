@@ -1,15 +1,50 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dataset } from "../types/dataset";
 import Link from "next/link";
 import { StatusBadge } from "./StatusBadge";
 
+// Hardcoded categories for now
+const CATEGORIES = [
+  { id: "health", label: { en: "Healthcare", ar: "الرعاية الصحية" } },
+  { id: "education", label: { en: "Education", ar: "التعليم" } },
+  { id: "economy", label: { en: "Economy", ar: "الاقتصاد" } },
+  { id: "environment", label: { en: "Environment", ar: "البيئة" } },
+];
+
 interface DatasetListProps {
   datasets: Dataset[];
   isLoading?: boolean;
+  onSearch: (search: string) => void;
+  onCategoriesChange: (categories: string[]) => void;
+  search: string;
+  selectedCategories: string[];
 }
 
-export default function DatasetList({ datasets, isLoading }: DatasetListProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+export default function DatasetList({
+  datasets,
+  isLoading,
+  onSearch,
+  onCategoriesChange,
+  search,
+  selectedCategories,
+}: DatasetListProps) {
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onSearch(debouncedSearch);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [debouncedSearch, onSearch]);
+
+  const handleCategoryToggle = (categoryId: string) => {
+    const newCategories = selectedCategories.includes(categoryId)
+      ? selectedCategories.filter((id) => id !== categoryId)
+      : [...selectedCategories, categoryId];
+    onCategoriesChange(newCategories);
+  };
 
   if (isLoading) {
     return (
@@ -24,16 +59,6 @@ export default function DatasetList({ datasets, isLoading }: DatasetListProps) {
     );
   }
 
-  const filteredDatasets = datasets.filter(
-    (dataset) =>
-      dataset.metadata?.title_en
-        ?.toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      dataset.metadata?.title_ar
-        ?.toLowerCase()
-        .includes(searchQuery.toLowerCase())
-  );
-
   return (
     <div className="space-y-4">
       {/* Search Bar */}
@@ -41,15 +66,36 @@ export default function DatasetList({ datasets, isLoading }: DatasetListProps) {
         <input
           type="text"
           placeholder="Search datasets..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          value={debouncedSearch}
+          onChange={(e) => setDebouncedSearch(e.target.value)}
           className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
 
+      {/* Category Filters */}
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h3 className="text-sm font-medium text-gray-700 mb-2">Categories</h3>
+        <div className="space-y-2">
+          {CATEGORIES.map((category) => (
+            <label key={category.id} className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={selectedCategories.includes(category.id)}
+                onChange={() => handleCategoryToggle(category.id)}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700">{category.label.en}</span>
+              <span className="text-sm text-gray-500" dir="rtl">
+                ({category.label.ar})
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+
       {/* Dataset List */}
       <div className="grid gap-4">
-        {filteredDatasets.map((dataset) => (
+        {datasets.map((dataset) => (
           <Link
             href={`/datasets/${dataset._id}`}
             key={dataset._id}
@@ -73,15 +119,19 @@ export default function DatasetList({ datasets, isLoading }: DatasetListProps) {
               <span>{dataset.rowCount.toLocaleString()} rows</span>
               <span className="mx-2">•</span>
               <span>{(dataset.fileSize / 1024 / 1024).toFixed(2)} MB</span>
+              {dataset.metadata?.category_en && (
+                <>
+                  <span className="mx-2">•</span>
+                  <span>{dataset.metadata.category_en}</span>
+                </>
+              )}
             </div>
           </Link>
         ))}
 
-        {filteredDatasets.length === 0 && (
+        {datasets.length === 0 && (
           <div className="text-center py-8 text-gray-500">
-            {datasets.length === 0
-              ? "No datasets available"
-              : "No datasets match your search"}
+            No datasets match your criteria
           </div>
         )}
       </div>

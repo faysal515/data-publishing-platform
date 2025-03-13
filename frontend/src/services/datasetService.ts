@@ -28,13 +28,32 @@ export const datasetService = {
   },
 
   async getAllDatasets(
-    page: number = 1,
-    limit: number = 10
-  ): Promise<ApiResponse<{ datasets: Dataset[]; pagination: any }>> {
-    const response = await axios.get<
-      ApiResponse<{ datasets: Dataset[]; pagination: any }>
-    >(`${API_BASE_URL}/datasets?page=${page}&limit=${limit}`);
+    params: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      categories?: string[];
+    } = {}
+  ) {
+    const { page = 1, limit = 10, search, categories } = params;
+    const queryParams = new URLSearchParams();
 
+    queryParams.append("page", String(page));
+    queryParams.append("limit", String(limit));
+
+    if (search) {
+      queryParams.append("search", search);
+    }
+
+    if (categories && categories.length > 0) {
+      categories.forEach((category) =>
+        queryParams.append("categories", category)
+      );
+    }
+
+    const response = await axios.get(
+      `${API_BASE_URL}/datasets?${queryParams.toString()}`
+    );
     return response.data;
   },
 
