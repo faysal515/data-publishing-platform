@@ -26,4 +26,23 @@ export const datasetService = {
 
     return response.data;
   },
+
+  async getAllDatasets(
+    page: number = 1,
+    limit: number = 10
+  ): Promise<ApiResponse<{ datasets: Dataset[]; pagination: any }>> {
+    const response = await axios.get<
+      ApiResponse<{ datasets: Dataset[]; pagination: any }>
+    >(`${API_BASE_URL}/datasets?page=${page}&limit=${limit}`);
+
+    return response.data;
+  },
+
+  async getDatasetById(id: string): Promise<ApiResponse<Dataset>> {
+    const response = await axios.get<ApiResponse<Dataset>>(
+      `${API_BASE_URL}/datasets/${id}`
+    );
+
+    return response.data;
+  },
 };
