@@ -40,7 +40,7 @@ export class AiService {
     <data>detailed column information including names, data types, and sample values</data>
 
     Guidelines:
-    1. Use the file name and column data to generate natural, descriptive titles
+    1. Use the file name and column data to generate natural, descriptive titles. Titles should not have any year mentioned, because there will be more dataset coming as versions.
     2. Create detailed descriptions explaining the dataset's purpose, contents, and potential uses
     3. Suggest relevant tags for easy discovery
     4. Categorize the dataset appropriately

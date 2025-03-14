@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Dataset, DatasetMetadata } from "../types/dataset";
+import { DATASET_STATUS } from "../constants";
 
 interface MetadataEditorProps {
   dataset: Dataset;
@@ -69,6 +70,10 @@ export default function MetadataEditor({
     setMetadata(dataset.metadata || {});
     setIsDirty(false);
   };
+
+  const canSubmit =
+    dataset.status !== DATASET_STATUS.UNDER_REVIEW &&
+    dataset.status !== DATASET_STATUS.APPROVED;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
@@ -277,24 +282,34 @@ export default function MetadataEditor({
         </div>
       </div>
 
-      {/* Draft Controls */}
-      {!readOnly && isDirty && (
+      {/* Form Controls */}
+      {!readOnly && canSubmit && (
         <div className="pt-6 border-t border-gray-200">
-          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded relative">
-            <p className="font-medium">You have unsaved changes</p>
-            <div className="mt-2 flex justify-end space-x-4">
-              <button
-                type="button"
-                onClick={handleDiscardDraft}
-                className="bg-white text-gray-700 px-4 py-2 rounded border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-              >
-                Discard Draft
-              </button>
+          <div
+            className={`${
+              isDirty ? "bg-blue-50 border border-blue-200" : ""
+            } px-4 py-3 rounded relative`}
+          >
+            {isDirty && (
+              <p className="font-medium text-blue-700 mb-4">
+                You have unsaved changes
+              </p>
+            )}
+            <div className="flex justify-end space-x-4">
+              {isDirty && (
+                <button
+                  type="button"
+                  onClick={handleDiscardDraft}
+                  className="bg-white text-gray-700 px-4 py-2 rounded border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                >
+                  Discard Changes
+                </button>
+              )}
               <button
                 type="submit"
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                Save Changes
+                {isDirty ? "Save and Submit for Review" : "Submit for Review"}
               </button>
             </div>
           </div>

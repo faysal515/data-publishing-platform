@@ -247,6 +247,12 @@ export default function DatasetDetailPage() {
                     </span>
                   </div>
                 )}
+                {dataset.filePath && (
+                  <div>
+                    <span className="font-medium">File Link:</span>{" "}
+                    {dataset.filePath}
+                  </div>
+                )}
               </div>
 
               {/* Second Column */}

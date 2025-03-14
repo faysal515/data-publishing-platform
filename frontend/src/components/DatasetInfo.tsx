@@ -23,6 +23,7 @@ export default function DatasetInfo({ dataset }: DatasetInfoProps) {
               <span className="font-medium">Original Name:</span>{" "}
               {dataset.originalFilename}
             </p>
+
             <p>
               <span className="font-medium">File Type:</span>{" "}
               {dataset.fileType.toUpperCase()}
