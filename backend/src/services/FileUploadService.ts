@@ -668,4 +668,42 @@ export class FileUploadService {
       throw new ApiError(500, `Error updating metadata: ${error.message}`);
     }
   }
+
+  /**
+   * Get dataset filters (statuses and categories)
+   */
+  async getDatasetFilters(): Promise<{
+    statuses: string[];
+    categories: string[];
+  }> {
+    logger.debug("Fetching dataset filters");
+
+    try {
+      // Get all unique categories from metadata
+      const categoriesResult = await Dataset.distinct("metadata.category_en");
+      const categories = categoriesResult.filter(
+        (category) => category != null
+      );
+
+      // Get all statuses from constants
+      const statuses = Object.values(DATASET_STATUS);
+
+      logger.debug(
+        `Found ${categories.length} categories and ${statuses.length} statuses`
+      );
+
+      return {
+        categories,
+        statuses,
+      };
+    } catch (error: any) {
+      logger.error(`Error fetching dataset filters: ${error.message}`, {
+        error,
+      });
+      throw new ApiError(
+        500,
+        `Error fetching dataset filters: ${error.message}`
+      );
+    }
+  }
 }

@@ -109,6 +109,30 @@ export class DatasetController {
   }
 
   /**
+   * Get dataset filters
+   */
+  @Get("/filters")
+  async getDatasetFilters() {
+    logger.info("Request to get dataset filters");
+
+    try {
+      const filters = await this.fileUploadService.getDatasetFilters();
+      return apiResponse(filters, "Dataset filters retrieved successfully");
+    } catch (error: any) {
+      if (error instanceof ApiError) {
+        throw new HttpError(error.status, error.message);
+      }
+      logger.error(`Error retrieving dataset filters: ${error.message}`, {
+        error,
+      });
+      throw new HttpError(
+        500,
+        `Error retrieving dataset filters: ${error.message}`
+      );
+    }
+  }
+
+  /**
    * Get dataset by ID
    */
   @Get("/:id")
