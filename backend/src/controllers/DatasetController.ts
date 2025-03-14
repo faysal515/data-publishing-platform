@@ -11,7 +11,7 @@ import {
   Put,
 } from "routing-controllers";
 import { Service } from "typedi";
-import { FileUploadService } from "../services/FileUploadService";
+import { DatasetService } from "../services/DatasetService";
 import { apiResponse } from "../utils/helpers";
 import { ApiError } from "../utils/ApiError";
 import multer from "multer";
@@ -27,7 +27,7 @@ const upload = multer({
 @JsonController("/v1/datasets")
 @Service()
 export class DatasetController {
-  constructor(private fileUploadService: FileUploadService) {}
+  constructor(private datasetService: DatasetService) {}
 
   /**
    * Upload a new dataset file
@@ -44,14 +44,7 @@ export class DatasetController {
         throw new ApiError(400, "No file uploaded");
       }
 
-      this.fileUploadService.validateFile(file);
-
-      const filePath = this.fileUploadService.saveFile(file);
-
-      const dataset = await this.fileUploadService.processFile(
-        filePath,
-        file.originalname
-      );
+      const dataset = await this.datasetService.createDataset(file);
 
       logger.info(`File processed successfully: ${file.originalname}`);
       return apiResponse(dataset, "File uploaded and processed successfully");
@@ -74,7 +67,7 @@ export class DatasetController {
     logger.info(`Request to get datasets ${JSON.stringify(paginationDto)}`);
 
     try {
-      const { datasets, total } = await this.fileUploadService.getAllDatasets(
+      const { datasets, total } = await this.datasetService.getAllDatasets(
         paginationDto.page,
         paginationDto.limit,
         paginationDto.search,
@@ -116,7 +109,7 @@ export class DatasetController {
     logger.info("Request to get dataset filters");
 
     try {
-      const filters = await this.fileUploadService.getDatasetFilters();
+      const filters = await this.datasetService.getDatasetFilters();
       return apiResponse(filters, "Dataset filters retrieved successfully");
     } catch (error: any) {
       if (error instanceof ApiError) {
@@ -140,7 +133,7 @@ export class DatasetController {
     logger.info(`Request to get dataset by ID: ${id}`);
 
     try {
-      const dataset = await this.fileUploadService.getDatasetById(id);
+      const dataset = await this.datasetService.getDatasetById(id);
       logger.debug(`Dataset found: ${id}`);
       return apiResponse(dataset, "Dataset retrieved successfully");
     } catch (error: any) {
@@ -162,7 +155,7 @@ export class DatasetController {
     logger.info(`Request to delete dataset: ${id}`);
 
     try {
-      await this.fileUploadService.deleteDataset(id);
+      await this.datasetService.deleteDataset(id);
       logger.info(`Dataset deleted: ${id}`);
       return apiResponse(null, "Dataset deleted successfully");
     } catch (error: any) {
@@ -182,7 +175,7 @@ export class DatasetController {
     logger.info(`Request to update metadata for dataset: ${id}`);
 
     try {
-      const dataset = await this.fileUploadService.updateMetadata(id, metadata);
+      const dataset = await this.datasetService.updateMetadata(id, metadata);
       return apiResponse(dataset, "Metadata updated successfully");
     } catch (error: any) {
       if (error instanceof ApiError) {
