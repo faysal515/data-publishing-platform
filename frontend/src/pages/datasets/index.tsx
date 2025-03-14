@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Dataset, DatasetStatus } from "../../types/dataset";
+import { Dataset } from "../../types/dataset";
+import { DatasetStatus } from "../../constants";
 import DatasetList from "../../components/DatasetList";
 import { datasetService } from "../../services/datasetService";
 import Link from "next/link";
@@ -28,7 +29,9 @@ export default function DatasetsPage() {
     const fetchFilters = async () => {
       try {
         const response = await datasetService.getDatasetFilters();
-        setFilters(response.data);
+        if (response.data) {
+          setFilters(response.data);
+        }
       } catch (err) {
         console.error("Error fetching filters:", err);
       }

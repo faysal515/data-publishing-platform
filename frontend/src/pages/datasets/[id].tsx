@@ -4,6 +4,7 @@ import { Dataset, VersionHistoryEntry } from "../../types/dataset";
 import { datasetService } from "../../services/datasetService";
 import MetadataEditor from "../../components/MetadataEditor";
 import { StatusBadge } from "../../components/StatusBadge";
+import { StatusJourney } from "../../components/StatusJourney";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../contexts/AuthContext";
@@ -176,7 +177,6 @@ export default function DatasetDetailPage() {
             Back to Datasets
           </Link>
           <div className="flex items-center space-x-4">
-            <StatusBadge status={dataset.status} />
             {dataset.status === DATASET_STATUS.APPROVED && (
               <button
                 onClick={() => setShowVersionUpload(!showVersionUpload)}
@@ -214,6 +214,13 @@ export default function DatasetDetailPage() {
             <h2 className="text-xl font-semibold">Dataset Information</h2>
           </div>
           <div className="px-6 py-4">
+            <div className="mb-6 pb-6 border-b">
+              <h3 className="text-sm font-medium text-gray-900 mb-4">
+                Status Journey
+              </h3>
+              <StatusJourney currentStatus={dataset.status} />
+            </div>
+
             <div className="grid grid-cols-3 gap-6">
               {/* First Column */}
               <div className="space-y-4 text-sm">

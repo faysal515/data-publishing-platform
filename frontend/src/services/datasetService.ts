@@ -1,5 +1,6 @@
 import axios from "axios";
-import { ApiResponse, Dataset, DatasetStatus } from "../types/dataset";
+import { ApiResponse, Dataset } from "../types/dataset";
+import { DatasetStatus } from "../constants";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
