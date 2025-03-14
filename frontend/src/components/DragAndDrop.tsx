@@ -32,13 +32,11 @@ export default function DragAndDrop({
       let response;
 
       if (uploadType === "version" && datasetId) {
-        // Upload new version
         response = await datasetService.uploadNewVersion(
           datasetId,
           selectedFile
         );
       } else {
-        // Upload new dataset
         response = await datasetService.uploadDataset(selectedFile);
       }
 
@@ -76,10 +74,8 @@ export default function DragAndDrop({
 
     const file = acceptedFiles[0];
 
-    // Clear previous upload state
     setUploadedDataset(null);
 
-    // Validate file type
     const allowedTypes = [
       "text/csv",
       "application/vnd.ms-excel",
@@ -91,7 +87,6 @@ export default function DragAndDrop({
       return;
     }
 
-    // Validate file size (10MB max)
     const maxSize = 10 * 1024 * 1024; // 10MB in bytes
     if (file.size > maxSize) {
       toast.error("File size must be less than 10MB");

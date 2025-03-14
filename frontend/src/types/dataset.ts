@@ -4,7 +4,7 @@ export interface Column {
   name: string;
   dataType: string;
   sampleValues: string[];
-  _id: any; // We'll keep this as any since we don't need to use the buffer
+  _id: any;
 }
 
 export interface DatasetMetadata {

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Dataset } from "../../types/dataset";
-import { DatasetStatus } from "../../constants";
 import DatasetList from "../../components/DatasetList";
 import { datasetService } from "../../services/datasetService";
 
@@ -49,7 +48,6 @@ export default function DatasetsPage() {
           categories: selectedCategories,
         });
 
-        // Filter datasets by status client-side if any statuses are selected
         let filteredDatasets = response.data.datasets;
         if (selectedStatuses.length > 0) {
           filteredDatasets = filteredDatasets.filter((dataset: Dataset) =>
@@ -72,17 +70,17 @@ export default function DatasetsPage() {
 
   const handleSearch = (newSearch: string) => {
     setSearch(newSearch);
-    setPage(1); // Reset to first page when search changes
+    setPage(1);
   };
 
   const handleCategoriesChange = (newCategories: string[]) => {
     setSelectedCategories(newCategories);
-    setPage(1); // Reset to first page when categories change
+    setPage(1);
   };
 
   const handleStatusesChange = (newStatuses: string[]) => {
     setSelectedStatuses(newStatuses);
-    setPage(1); // Reset to first page when statuses change
+    setPage(1);
   };
 
   return (

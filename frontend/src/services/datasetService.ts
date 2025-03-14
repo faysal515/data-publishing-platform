@@ -52,19 +52,16 @@ export const datasetService = {
 
       const data = response.data;
 
-      // Handle the direct error response format
       if (!data.success && "status" in data) {
-        // Convert the error response to match ApiResponse format
         return {
           success: false,
           message: data.message,
-          data: null as any, // We need to cast to any here since we don't have data
+          data: null as any,
         };
       }
 
       return data as ApiResponse<Dataset>;
     } catch (error: any) {
-      // Handle network errors or other axios errors
       return {
         success: false,
         message:

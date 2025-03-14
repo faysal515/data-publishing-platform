@@ -12,7 +12,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<UserRole>("editor");
 
-  // Persist role in localStorage
   useEffect(() => {
     const savedRole = localStorage.getItem("userRole") as UserRole;
     if (savedRole) {

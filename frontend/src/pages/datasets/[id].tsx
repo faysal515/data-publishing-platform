@@ -49,7 +49,7 @@ export default function DatasetDetailPage() {
         ...metadata,
         status: DATASET_STATUS.UNDER_REVIEW,
         role: role,
-        // comment: "Metadata updated and submitted for review",
+        comment: "Metadata updated and submitted for review",
       });
       setDataset(response.data);
       toast.success("Metadata saved successfully and sent for review");
@@ -234,7 +234,7 @@ export default function DatasetDetailPage() {
                 </div>
                 <div>
                   <span className="font-medium">File Size:</span>{" "}
-                  {(dataset.fileSize / 1024 / 1024).toFixed(2)} MB
+                  {(dataset.fileSize / 1024).toFixed(2)} KB
                 </div>
                 {dataset.currentVersion && (
                   <div>

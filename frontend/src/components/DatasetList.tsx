@@ -3,14 +3,6 @@ import { Dataset } from "../types/dataset";
 import Link from "next/link";
 import { StatusBadge } from "./StatusBadge";
 
-// Hardcoded categories for now
-const CATEGORIES = [
-  { id: "health", label: { en: "Healthcare", ar: "الرعاية الصحية" } },
-  { id: "education", label: { en: "Education", ar: "التعليم" } },
-  { id: "economy", label: { en: "Economy", ar: "الاقتصاد" } },
-  { id: "environment", label: { en: "Environment", ar: "البيئة" } },
-];
-
 interface DatasetListProps {
   datasets: Dataset[];
   isLoading?: boolean;
@@ -38,7 +30,7 @@ export default function DatasetList({
 }: DatasetListProps) {
   const [debouncedSearch, setDebouncedSearch] = useState(search);
 
-  // Debounce search input
+  // wait 300ms before calling onSearch
   useEffect(() => {
     const timer = setTimeout(() => {
       onSearch(debouncedSearch);
@@ -76,9 +68,7 @@ export default function DatasetList({
 
   return (
     <div className="flex gap-6">
-      {/* Left sidebar with filters */}
       <div className="w-1/5 min-w-[200px]">
-        {/* Search Bar */}
         <div className="mb-4">
           <input
             type="text"
@@ -89,7 +79,6 @@ export default function DatasetList({
           />
         </div>
 
-        {/* Category Filters */}
         <div className="bg-gray-50 p-4 rounded-lg sticky top-4">
           <h3 className="text-sm font-medium text-gray-700 mb-2">Categories</h3>
           <div className="space-y-2">
@@ -106,7 +95,6 @@ export default function DatasetList({
             ))}
           </div>
 
-          {/* Status Filters */}
           <h3 className="text-sm font-medium text-gray-700 mb-2 mt-6">
             Status
           </h3>
@@ -128,10 +116,8 @@ export default function DatasetList({
         </div>
       </div>
 
-      {/* Main content area */}
       <div className="flex-1">
         <div className="space-y-4">
-          {/* Dataset List */}
           <div className="grid gap-4">
             {datasets.map((dataset) => (
               <Link

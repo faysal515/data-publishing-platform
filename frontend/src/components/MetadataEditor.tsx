@@ -18,7 +18,6 @@ export default function MetadataEditor({
   );
   const [isDirty, setIsDirty] = useState(false);
 
-  // Load draft from local storage on mount
   useEffect(() => {
     const draftKey = `dataset_draft_${dataset._id}`;
     const savedDraft = localStorage.getItem(draftKey);
@@ -30,13 +29,12 @@ export default function MetadataEditor({
         setIsDirty(true);
       } catch (error) {
         console.error("Error parsing draft:", error);
-        // If there's an error parsing, remove the corrupted draft
+
         localStorage.removeItem(draftKey);
       }
     }
   }, [dataset._id]);
 
-  // Save to local storage whenever metadata changes
   useEffect(() => {
     if (isDirty) {
       const draftKey = `dataset_draft_${dataset._id}`;
@@ -60,7 +58,7 @@ export default function MetadataEditor({
     e.preventDefault();
     if (readOnly) return;
     onSave(metadata);
-    // Clear draft after successful save
+
     localStorage.removeItem(`dataset_draft_${dataset._id}`);
     setIsDirty(false);
   };

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import Image from "next/image";
 import RoleToggle from "./RoleToggle";
 
 export default function Navbar() {
@@ -43,16 +42,6 @@ export default function Navbar() {
               } px-1 py-2 text-sm font-medium`}
             >
               Datasets
-            </Link>
-            <Link
-              href="/dashboard"
-              className={`${
-                router.pathname === "/dashboard"
-                  ? "text-foreground border-b-2 border-foreground"
-                  : "text-gray-500 hover:text-foreground"
-              } px-1 py-2 text-sm font-medium`}
-            >
-              Dashboard
             </Link>
           </div>
         </div>
