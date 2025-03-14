@@ -7,9 +7,9 @@ import * as XLSX from "xlsx";
 import { ApiError } from "../utils/ApiError";
 import { Dataset, IColumn, IDataset } from "../models/Dataset";
 import logger from "../utils/logger";
-import { generateDatasetMetadata } from "./aiService";
 import { DATASET_STATUS } from "../constants";
 import { MetadataDto } from "../dtos/MetadataDto";
+import { AiService } from "./aiService";
 
 @Service()
 export class FileUploadService {
@@ -17,7 +17,7 @@ export class FileUploadService {
   private readonly allowedFileTypes = [".csv", ".xlsx", ".xls"];
   private readonly maxFileSize = 10 * 1024 * 1024; // 10MB
 
-  constructor() {
+  constructor(private aiService: AiService) {
     this.uploadDir = path.join(process.cwd(), "uploads");
     if (!fs.existsSync(this.uploadDir)) {
       fs.mkdirSync(this.uploadDir, { recursive: true });
@@ -126,7 +126,8 @@ export class FileUploadService {
         `<data>${JSON.stringify(sampleData, null, 2)}</data>`;
 
       // Fire and forget - don't await
-      generateDatasetMetadata(datasetContent)
+      this.aiService
+        .generateDatasetMetadata(datasetContent)
         .then(async (metadata) => {
           // Update dataset with generated metadata
           await Dataset.findByIdAndUpdate(dataset._id, {
