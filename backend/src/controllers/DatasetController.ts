@@ -9,6 +9,7 @@ import {
   HttpError,
   QueryParams,
   Put,
+  HttpCode,
 } from "routing-controllers";
 import { Service } from "typedi";
 import { DatasetService } from "../services/DatasetService";
@@ -49,13 +50,63 @@ export class DatasetController {
       logger.info(`File processed successfully: ${file.originalname}`);
       return apiResponse(dataset, "File uploaded and processed successfully");
     } catch (error: any) {
-      if (error instanceof ApiError) {
+      if (error instanceof ApiError || error.isApiError) {
         throw new HttpError(error.status, error.message);
       }
       logger.error(`Unexpected error during file upload: ${error.message}`, {
         error,
       });
       throw new HttpError(500, `Error uploading file: ${error.message}`);
+    }
+  }
+
+  /**
+   * Upload a new version of an existing dataset
+   */
+  @Post("/:id/version")
+  @HttpCode(200)
+  async uploadNewVersion(
+    @Param("id") id: string,
+    @UploadedFile("file", { options: upload }) file: Express.Multer.File
+  ) {
+    logger.info(
+      `New version upload request received for dataset ${id}: ${
+        file?.originalname || "No file"
+      }`
+    );
+
+    try {
+      if (!file) {
+        logger.warn("Upload request without file");
+        throw new ApiError(400, "No file uploaded");
+      }
+
+      const dataset = await this.datasetService.createNewVersion(id, file);
+
+      logger.info(`New version processed successfully: ${file.originalname}`);
+      return apiResponse(
+        dataset,
+        "New version uploaded and processed successfully"
+      );
+    } catch (error: any) {
+      logger.error(`Error during version upload: ${error.message}`, {
+        error,
+      });
+
+      // Use a direct response instead of throwing HttpError
+      if (error instanceof ApiError || error.isApiError) {
+        return {
+          success: false,
+          message: error.message,
+          status: error.status,
+        };
+      }
+
+      return {
+        success: false,
+        message: `Error uploading new version: ${error.message}`,
+        status: 500,
+      };
     }
   }
 
@@ -93,7 +144,7 @@ export class DatasetController {
         "Datasets retrieved successfully"
       );
     } catch (error: any) {
-      if (error instanceof ApiError) {
+      if (error instanceof ApiError || error.isApiError) {
         throw new HttpError(error.status, error.message);
       }
       logger.error(`Error retrieving datasets: ${error.message}`, { error });
@@ -112,7 +163,7 @@ export class DatasetController {
       const filters = await this.datasetService.getDatasetFilters();
       return apiResponse(filters, "Dataset filters retrieved successfully");
     } catch (error: any) {
-      if (error instanceof ApiError) {
+      if (error instanceof ApiError || error.isApiError) {
         throw new HttpError(error.status, error.message);
       }
       logger.error(`Error retrieving dataset filters: ${error.message}`, {
@@ -137,7 +188,7 @@ export class DatasetController {
       logger.debug(`Dataset found: ${id}`);
       return apiResponse(dataset, "Dataset retrieved successfully");
     } catch (error: any) {
-      if (error instanceof ApiError) {
+      if (error instanceof ApiError || error.isApiError) {
         throw new HttpError(error.status, error.message);
       }
       logger.error(`Error retrieving dataset ${id}: ${error.message}`, {
@@ -159,7 +210,7 @@ export class DatasetController {
       logger.info(`Dataset deleted: ${id}`);
       return apiResponse(null, "Dataset deleted successfully");
     } catch (error: any) {
-      if (error instanceof ApiError) {
+      if (error instanceof ApiError || error.isApiError) {
         throw new HttpError(error.status, error.message);
       }
       logger.error(`Error deleting dataset ${id}: ${error.message}`, { error });
@@ -178,7 +229,7 @@ export class DatasetController {
       const dataset = await this.datasetService.updateMetadata(id, metadata);
       return apiResponse(dataset, "Metadata updated successfully");
     } catch (error: any) {
-      if (error instanceof ApiError) {
+      if (error instanceof ApiError || error.isApiError) {
         throw new HttpError(error.status, error.message);
       }
       logger.error(

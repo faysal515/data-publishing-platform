@@ -6,6 +6,18 @@ import { DATASET_STATUS } from "../constants";
 import { MetadataDto } from "../dtos/MetadataDto";
 import { AiService } from "./aiService";
 import { FileService, ProcessedFileData } from "./FileService";
+import mongoose from "mongoose";
+
+interface VersionInfo {
+  versionNumber: number;
+  filePath: string;
+  fileSize: number;
+  fileType: string;
+  originalFilename: string;
+  uploadDate: Date;
+  rowCount: number;
+  columns: any[];
+}
 
 @Service()
 export class DatasetService {
@@ -34,6 +46,84 @@ export class DatasetService {
 
       return dataset;
     } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new version of an existing dataset
+   */
+  async createNewVersion(
+    id: string,
+    file: Express.Multer.File
+  ): Promise<IDataset> {
+    try {
+      // Get the existing dataset
+      const existingDataset = await Dataset.findById(id);
+      if (!existingDataset) {
+        throw new ApiError(404, "Dataset not found");
+      }
+
+      // Check if dataset is in approved status
+      if (existingDataset.status !== DATASET_STATUS.APPROVED) {
+        throw new ApiError(400, "Only approved datasets can have new versions");
+      }
+
+      // Validate and save file
+      this.fileService.validateFile(file);
+      const filePath = this.fileService.saveFile(file);
+
+      // Process file
+      const processedData = await this.fileService.processFile(
+        filePath,
+        file.originalname
+      );
+
+      // Create version info from the existing dataset
+      const versionInfo: VersionInfo = {
+        versionNumber: (existingDataset.versions?.length || 0) + 1,
+        filePath: existingDataset.filePath,
+        fileSize: existingDataset.fileSize,
+        fileType: existingDataset.fileType,
+        originalFilename: existingDataset.originalFilename,
+        uploadDate: existingDataset.uploadDate,
+        rowCount: existingDataset.rowCount,
+        columns: existingDataset.columns,
+      };
+
+      // Update the dataset with new file info and add old version to versions array
+      const updatedDataset = await Dataset.findByIdAndUpdate(
+        id,
+        {
+          $set: {
+            filename: processedData.filename,
+            originalFilename: processedData.originalFilename,
+            fileSize: processedData.fileSize,
+            fileType: processedData.fileType,
+            uploadDate: new Date(),
+            rowCount: processedData.rowCount,
+            columns: processedData.columns,
+            filePath: processedData.filePath,
+            currentVersion: (existingDataset.currentVersion || 1) + 1,
+          },
+          $push: {
+            versions: versionInfo,
+          },
+        },
+        { new: true }
+      );
+
+      if (!updatedDataset) {
+        throw new ApiError(404, "Dataset not found after update");
+      }
+
+      logger.info(`New version created for dataset: ${id}`);
+      return updatedDataset.toObject();
+    } catch (error) {
+      // If there was an error, clean up any created file
+      if (file && file.path) {
+        this.fileService.deleteFile(file.path);
+      }
       throw error;
     }
   }

@@ -29,6 +29,18 @@ interface IMetadataHistoryEntry {
   comment?: string;
 }
 
+// Define the version history entry interface
+interface IVersionHistoryEntry {
+  versionNumber: number;
+  filePath: string;
+  fileSize: number;
+  fileType: string;
+  originalFilename: string;
+  uploadDate: Date;
+  rowCount: number;
+  columns: IColumn[];
+}
+
 // Define the dataset interface
 export interface IDataset extends Document {
   _id: mongoose.Types.ObjectId;
@@ -43,7 +55,8 @@ export interface IDataset extends Document {
   status: DatasetStatus;
   metadata?: IMetadata;
   metadata_history?: IMetadataHistoryEntry[];
-  versions?: mongoose.Types.ObjectId[];
+  versions?: IVersionHistoryEntry[];
+  currentVersion?: number;
 }
 
 // Create the schema
@@ -97,53 +110,115 @@ const DatasetSchema = new Schema<IDataset>(
         comment: { type: String },
       },
     ],
-    versions: [{ type: Schema.Types.ObjectId, ref: "Dataset" }],
+    versions: [
+      {
+        versionNumber: { type: Number, required: true },
+        filePath: { type: String, required: true },
+        fileSize: { type: Number, required: true },
+        fileType: { type: String, required: true },
+        originalFilename: { type: String, required: true },
+        uploadDate: { type: Date, required: true },
+        rowCount: { type: Number, required: true },
+        columns: [
+          {
+            name: { type: String, required: true },
+            dataType: { type: String, required: true },
+            sampleValues: [{ type: String }],
+          },
+        ],
+      },
+    ],
+    currentVersion: { type: Number, default: 1 },
   },
   {
     timestamps: true,
     toJSON: {
       transform: function (doc, ret) {
+        // Helper function to convert any _id to string
+        const convertId = (obj: any) => {
+          if (obj && obj._id) {
+            if (obj._id.buffer) {
+              obj._id = obj._id.toString("hex");
+            } else {
+              obj._id = obj._id.toString();
+            }
+          }
+          return obj;
+        };
+
         // Convert main document _id
-        if (ret._id && ret._id.buffer) {
-          ret._id = ret._id.toString("hex");
-        } else if (ret._id) {
-          ret._id = ret._id.toString();
-        }
+        ret = convertId(ret);
 
         // Convert column _ids
         if (ret.columns && Array.isArray(ret.columns)) {
-          ret.columns = ret.columns.map((column) => {
-            if (column._id && column._id.buffer) {
-              column._id = column._id.toString("hex");
-            } else if (column._id) {
-              column._id = column._id.toString();
+          ret.columns = ret.columns.map(convertId);
+        }
+
+        // Convert versions array and nested columns
+        if (ret.versions && Array.isArray(ret.versions)) {
+          ret.versions = ret.versions.map((version) => {
+            // Convert version _id
+            version = convertId(version);
+
+            // Convert columns within version
+            if (version.columns && Array.isArray(version.columns)) {
+              version.columns = version.columns.map(convertId);
             }
-            return column;
+
+            return version;
           });
         }
+
+        // Convert metadata_history entries
+        if (ret.metadata_history && Array.isArray(ret.metadata_history)) {
+          ret.metadata_history = ret.metadata_history.map(convertId);
+        }
+
         return ret;
       },
     },
     toObject: {
       transform: function (doc, ret) {
+        // Helper function to convert any _id to string
+        const convertId = (obj: any) => {
+          if (obj && obj._id) {
+            if (obj._id.buffer) {
+              obj._id = obj._id.toString("hex");
+            } else {
+              obj._id = obj._id.toString();
+            }
+          }
+          return obj;
+        };
+
         // Convert main document _id
-        if (ret._id && ret._id.buffer) {
-          ret._id = ret._id.toString("hex");
-        } else if (ret._id) {
-          ret._id = ret._id.toString();
-        }
+        ret = convertId(ret);
 
         // Convert column _ids
         if (ret.columns && Array.isArray(ret.columns)) {
-          ret.columns = ret.columns.map((column) => {
-            if (column._id && column._id.buffer) {
-              column._id = column._id.toString("hex");
-            } else if (column._id) {
-              column._id = column._id.toString();
+          ret.columns = ret.columns.map(convertId);
+        }
+
+        // Convert versions array and nested columns
+        if (ret.versions && Array.isArray(ret.versions)) {
+          ret.versions = ret.versions.map((version) => {
+            // Convert version _id
+            version = convertId(version);
+
+            // Convert columns within version
+            if (version.columns && Array.isArray(version.columns)) {
+              version.columns = version.columns.map(convertId);
             }
-            return column;
+
+            return version;
           });
         }
+
+        // Convert metadata_history entries
+        if (ret.metadata_history && Array.isArray(ret.metadata_history)) {
+          ret.metadata_history = ret.metadata_history.map(convertId);
+        }
+
         return ret;
       },
     },

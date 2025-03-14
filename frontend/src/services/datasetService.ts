@@ -32,6 +32,47 @@ export const datasetService = {
     return response.data;
   },
 
+  async uploadNewVersion(
+    id: string,
+    file: File
+  ): Promise<ApiResponse<Dataset>> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await axios.post<
+        | ApiResponse<Dataset>
+        | { success: false; message: string; status: number }
+      >(`${API_BASE_URL}/datasets/${id}/version`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      const data = response.data;
+
+      // Handle the direct error response format
+      if (!data.success && "status" in data) {
+        // Convert the error response to match ApiResponse format
+        return {
+          success: false,
+          message: data.message,
+          data: null as any, // We need to cast to any here since we don't have data
+        };
+      }
+
+      return data as ApiResponse<Dataset>;
+    } catch (error: any) {
+      // Handle network errors or other axios errors
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || error.message || "An error occurred",
+        data: null as any,
+      };
+    }
+  },
+
   async getAllDatasets(
     params: {
       page?: number;

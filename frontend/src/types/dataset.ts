@@ -45,7 +45,7 @@ export interface Dataset {
 export interface ApiResponse<T> {
   success: boolean;
   message?: string;
-  data: T;
+  data: T | null;
 }
 
 export type DatasetStatus =
