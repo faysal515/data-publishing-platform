@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-// Define environment variables schema
 const envSchema = z.object({
   PORT: z.string().transform(Number).default("3000"),
   MONGODB_URI: z.string().url(),
@@ -8,12 +7,11 @@ const envSchema = z.object({
     .enum(["development", "production", "test"])
     .default("development"),
   LOG_LEVEL: z.enum(["error", "warn", "info", "http", "debug"]).default("info"),
-  // Azure OpenAI Configuration
+
   AZURE_API_KEY: z.string().min(1),
   AZURE_BASE_URL: z.string().url(),
 });
 
-// Validate environment variables
 const env = envSchema.safeParse(process.env);
 
 if (!env.success) {
@@ -32,5 +30,4 @@ export const config = {
   },
 } as const;
 
-// Type for the config object
 export type Config = typeof config;

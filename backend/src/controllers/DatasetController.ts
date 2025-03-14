@@ -2,7 +2,6 @@ import {
   JsonController,
   Get,
   Post,
-  Delete,
   Param,
   UploadedFile,
   Body,
@@ -17,7 +16,7 @@ import { apiResponse } from "../utils/helpers";
 import { ApiError } from "../utils/ApiError";
 import multer from "multer";
 import logger from "../utils/logger";
-import { PaginationDto } from "../dtos/PaginationDto";
+import { SearchAndFilterDto } from "../dtos/SearchDto";
 import { MetadataDto } from "../dtos/MetadataDto";
 
 const storage = multer.memoryStorage();
@@ -30,9 +29,6 @@ const upload = multer({
 export class DatasetController {
   constructor(private datasetService: DatasetService) {}
 
-  /**
-   * Upload a new dataset file
-   */
   @Post("/upload")
   async uploadDataset(
     @UploadedFile("file", { options: upload }) file: Express.Multer.File
@@ -110,11 +106,8 @@ export class DatasetController {
     }
   }
 
-  /**
-   * Get all datasets with pagination
-   */
   @Get("/")
-  async getAllDatasets(@QueryParams() paginationDto: PaginationDto) {
+  async getAllDatasets(@QueryParams() paginationDto: SearchAndFilterDto) {
     logger.info(`Request to get datasets ${JSON.stringify(paginationDto)}`);
 
     try {
@@ -152,9 +145,6 @@ export class DatasetController {
     }
   }
 
-  /**
-   * Get dataset filters
-   */
   @Get("/filters")
   async getDatasetFilters() {
     logger.info("Request to get dataset filters");
@@ -176,9 +166,6 @@ export class DatasetController {
     }
   }
 
-  /**
-   * Get dataset by ID
-   */
   @Get("/:id")
   async getDatasetById(@Param("id") id: string) {
     logger.info(`Request to get dataset by ID: ${id}`);
@@ -198,29 +185,6 @@ export class DatasetController {
     }
   }
 
-  /**
-   * Delete dataset by ID
-   */
-  @Delete("/:id")
-  async deleteDataset(@Param("id") id: string) {
-    logger.info(`Request to delete dataset: ${id}`);
-
-    try {
-      await this.datasetService.deleteDataset(id);
-      logger.info(`Dataset deleted: ${id}`);
-      return apiResponse(null, "Dataset deleted successfully");
-    } catch (error: any) {
-      if (error instanceof ApiError || error.isApiError) {
-        throw new HttpError(error.status, error.message);
-      }
-      logger.error(`Error deleting dataset ${id}: ${error.message}`, { error });
-      throw new HttpError(500, `Error deleting dataset: ${error.message}`);
-    }
-  }
-
-  /**
-   * Update dataset metadata
-   */
   @Put("/:id/metadata")
   async updateMetadata(@Param("id") id: string, @Body() metadata: MetadataDto) {
     logger.info(`Request to update metadata for dataset: ${id}`);

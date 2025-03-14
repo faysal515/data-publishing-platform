@@ -3,7 +3,7 @@ import "dotenv/config";
 import express from "express";
 import { createExpressServer, useContainer } from "routing-controllers";
 import { Container } from "typedi";
-import { DataController } from "./controllers/DataController";
+import { DataController } from "./controllers/HealthController";
 import { DatasetController } from "./controllers/DatasetController";
 import { GlobalErrorHandler } from "./middlewares/ErrorMiddleware";
 import cors from "cors";

@@ -155,7 +155,8 @@ export default function DatasetList({
 
             {datasets.length === 0 && (
               <div className="text-center py-8 text-gray-500">
-                No datasets match your criteria
+                Start uploading datasets to get started or Your search have no
+                results
               </div>
             )}
           </div>

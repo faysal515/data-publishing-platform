@@ -6,8 +6,6 @@ import { DATASET_STATUS } from "../constants";
 import { MetadataDto } from "../dtos/MetadataDto";
 import { AiService } from "./aiService";
 import { FileService, ProcessedFileData } from "./FileService";
-import mongoose from "mongoose";
-
 interface VersionInfo {
   versionNumber: number;
   filePath: string;
@@ -23,25 +21,18 @@ interface VersionInfo {
 export class DatasetService {
   constructor(private aiService: AiService, private fileService: FileService) {}
 
-  /**
-   * Process uploaded file and create dataset
-   */
   async createDataset(file: Express.Multer.File): Promise<IDataset> {
     try {
-      // Validate and save file
       this.fileService.validateFile(file);
       const filePath = this.fileService.saveFile(file);
 
-      // Process file
       const processedData = await this.fileService.processFile(
         filePath,
         file.originalname
       );
 
-      // Create dataset
       const dataset = await this.saveDataset(processedData);
 
-      // Trigger metadata generation
       this.triggerMetadataGeneration(dataset);
 
       return dataset;
@@ -58,28 +49,23 @@ export class DatasetService {
     file: Express.Multer.File
   ): Promise<IDataset> {
     try {
-      // Get the existing dataset
       const existingDataset = await Dataset.findById(id);
       if (!existingDataset) {
         throw new ApiError(404, "Dataset not found");
       }
 
-      // Check if dataset is in approved status
       if (existingDataset.status !== DATASET_STATUS.APPROVED) {
         throw new ApiError(400, "Only approved datasets can have new versions");
       }
 
-      // Validate and save file
       this.fileService.validateFile(file);
       const filePath = this.fileService.saveFile(file);
 
-      // Process file
       const processedData = await this.fileService.processFile(
         filePath,
         file.originalname
       );
 
-      // Create version info from the existing dataset
       const versionInfo: VersionInfo = {
         versionNumber: (existingDataset.versions?.length || 0) + 1,
         filePath: existingDataset.filePath,
@@ -91,7 +77,6 @@ export class DatasetService {
         columns: existingDataset.columns,
       };
 
-      // Update the dataset with new file info and add old version to versions array
       const updatedDataset = await Dataset.findByIdAndUpdate(
         id,
         {
@@ -120,7 +105,6 @@ export class DatasetService {
       logger.info(`New version created for dataset: ${id}`);
       return updatedDataset.toObject();
     } catch (error) {
-      // If there was an error, clean up any created file
       if (file && file.path) {
         this.fileService.deleteFile(file.path);
       }
@@ -147,7 +131,6 @@ export class DatasetService {
    */
   private async triggerMetadataGeneration(dataset: IDataset): Promise<void> {
     try {
-      // Get sample data for AI processing
       const sampleData = dataset.columns.map((col) => ({
         name: col.name,
         type: col.dataType,
@@ -197,9 +180,6 @@ export class DatasetService {
     }
   }
 
-  /**
-   * Get all datasets with pagination
-   */
   async getAllDatasets(
     page: number = 1,
     limit: number = 10,
@@ -242,9 +222,6 @@ export class DatasetService {
     };
   }
 
-  /**
-   * Get dataset by ID
-   */
   async getDatasetById(id: string): Promise<IDataset> {
     const dataset = await Dataset.findById(id);
     if (!dataset) {
@@ -253,26 +230,6 @@ export class DatasetService {
     return dataset.toObject();
   }
 
-  /**
-   * Delete dataset by ID
-   */
-  async deleteDataset(id: string): Promise<void> {
-    const dataset = await Dataset.findById(id);
-    if (!dataset) {
-      throw new ApiError(404, "Dataset not found");
-    }
-
-    // Delete file
-    this.fileService.deleteFile(dataset.filePath);
-
-    // Delete dataset from database
-    await Dataset.findByIdAndDelete(id);
-    logger.info(`Dataset deleted: ${id}`);
-  }
-
-  /**
-   * Update dataset metadata
-   */
   async updateMetadata(id: string, metadata: MetadataDto): Promise<IDataset> {
     const dataset = await Dataset.findById(id);
     if (!dataset) {
@@ -324,9 +281,6 @@ export class DatasetService {
     }
   }
 
-  /**
-   * Get dataset filters (statuses and categories)
-   */
   async getDatasetFilters(): Promise<{
     statuses: string[];
     categories: string[];
