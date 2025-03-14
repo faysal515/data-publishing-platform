@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { Dataset } from "../../types/dataset";
+import { Dataset, VersionHistoryEntry } from "../../types/dataset";
 import { datasetService } from "../../services/datasetService";
 import MetadataEditor from "../../components/MetadataEditor";
 import { StatusBadge } from "../../components/StatusBadge";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../contexts/AuthContext";
+import DragAndDrop from "../../components/DragAndDrop";
+import { DATASET_STATUS } from "../../constants";
 
 export default function DatasetDetailPage() {
   const router = useRouter();
@@ -17,6 +19,7 @@ export default function DatasetDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [reviewComment, setReviewComment] = useState("");
+  const [showVersionUpload, setShowVersionUpload] = useState(false);
 
   useEffect(() => {
     const fetchDataset = async () => {
@@ -43,7 +46,7 @@ export default function DatasetDetailPage() {
       setIsSaving(true);
       const response = await datasetService.updateMetadata(dataset._id, {
         ...metadata,
-        status: "under_review",
+        status: DATASET_STATUS.UNDER_REVIEW,
         role: role,
         // comment: "Metadata updated and submitted for review",
       });
@@ -71,7 +74,7 @@ export default function DatasetDetailPage() {
       setIsSaving(true);
       const response = await datasetService.updateMetadata(dataset._id, {
         ...dataset.metadata,
-        status: "approved",
+        status: DATASET_STATUS.APPROVED,
         role: role,
         comment: reviewComment.trim() || "Metadata approved",
       });
@@ -97,7 +100,7 @@ export default function DatasetDetailPage() {
       setIsSaving(true);
       const response = await datasetService.updateMetadata(dataset._id, {
         ...dataset.metadata,
-        status: "changes_requested",
+        status: DATASET_STATUS.CHANGES_REQUESTED,
         role: role,
         comment: reviewComment,
       });
@@ -110,6 +113,12 @@ export default function DatasetDetailPage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleVersionUploadSuccess = (updatedDataset: Dataset) => {
+    setDataset(updatedDataset);
+    setShowVersionUpload(false);
+    toast.success("New version uploaded successfully");
   };
 
   if (isLoading) {
@@ -166,8 +175,39 @@ export default function DatasetDetailPage() {
             </svg>
             Back to Datasets
           </Link>
-          <StatusBadge status={dataset.status} />
+          <div className="flex items-center space-x-4">
+            <StatusBadge status={dataset.status} />
+            {dataset.status === DATASET_STATUS.APPROVED && (
+              <button
+                onClick={() => setShowVersionUpload(!showVersionUpload)}
+                className={`px-4 py-2 text-white text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  showVersionUpload
+                    ? "bg-gray-500 hover:bg-gray-600 focus:ring-gray-500"
+                    : "bg-blue-500 hover:bg-blue-600 focus:ring-blue-500"
+                }`}
+              >
+                {showVersionUpload ? "Cancel" : "Upload New Version"}
+              </button>
+            )}
+          </div>
         </div>
+
+        {showVersionUpload && dataset.status === DATASET_STATUS.APPROVED && (
+          <div className="mb-6 bg-white shadow rounded-lg">
+            <div className="px-6 py-4 border-b">
+              <h2 className="text-xl font-semibold">Upload New Version</h2>
+            </div>
+            <div className="px-6 py-4">
+              <DragAndDrop
+                uploadType="version"
+                datasetId={dataset._id}
+                onUploadSuccess={handleVersionUploadSuccess}
+                minHeight="200px"
+                showPreview={false}
+              />
+            </div>
+          </div>
+        )}
 
         <div className="bg-white shadow rounded-lg">
           <div className="px-6 py-4 border-b">
@@ -189,6 +229,17 @@ export default function DatasetDetailPage() {
                   <span className="font-medium">File Size:</span>{" "}
                   {(dataset.fileSize / 1024 / 1024).toFixed(2)} MB
                 </div>
+                {dataset.currentVersion && (
+                  <div>
+                    <span className="font-medium">Version:</span>{" "}
+                    <span className="inline-flex items-center">
+                      {dataset.currentVersion}
+                      <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        Latest
+                      </span>
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Second Column */}
@@ -215,20 +266,28 @@ export default function DatasetDetailPage() {
                 <div className="space-y-3 max-h-[200px] overflow-y-auto">
                   {dataset?.metadata_history &&
                   dataset.metadata_history.length > 0 ? (
-                    dataset.metadata_history.map((history, index) => (
-                      <div
-                        key={index}
-                        className="bg-gray-50 p-3 rounded-lg text-sm"
-                      >
-                        <div className="flex justify-between text-xs text-gray-500 mb-1">
-                          <span>By {history.created_by}</span>
-                          <span>
-                            {new Date(history.created_at).toLocaleDateString()}
-                          </span>
+                    [...dataset.metadata_history]
+                      .sort(
+                        (a, b) =>
+                          new Date(b.created_at).getTime() -
+                          new Date(a.created_at).getTime()
+                      )
+                      .map((history, index) => (
+                        <div
+                          key={index}
+                          className="bg-gray-50 p-3 rounded-lg text-sm"
+                        >
+                          <div className="flex justify-between text-xs text-gray-500 mb-1">
+                            <span>By {history.created_by}</span>
+                            <span>
+                              {new Date(
+                                history.created_at
+                              ).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-gray-700">{history.comment}</p>
                         </div>
-                        <p className="text-gray-700">{history.comment}</p>
-                      </div>
-                    ))
+                      ))
                   ) : (
                     <p className="text-sm text-gray-500">
                       No review history yet
@@ -263,34 +322,36 @@ export default function DatasetDetailPage() {
                   onSave={handleSaveMetadata}
                   readOnly={true}
                 />
-                <div className="border-t pt-4">
-                  <h3 className="text-lg font-medium mb-4">Review Actions</h3>
-                  <div className="space-y-4">
-                    <textarea
-                      value={reviewComment}
-                      onChange={(e) => setReviewComment(e.target.value)}
-                      placeholder="Enter review comments here..."
-                      className="w-full px-3 py-2 border rounded-md"
-                      rows={4}
-                    />
-                    <div className="flex space-x-4">
-                      <button
-                        onClick={handleApprove}
-                        disabled={isSaving}
-                        className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:opacity-50"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={handleRequestChanges}
-                        disabled={isSaving || !reviewComment.trim()}
-                        className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 disabled:opacity-50"
-                      >
-                        Request Changes
-                      </button>
+                {dataset.status !== DATASET_STATUS.APPROVED && (
+                  <div className="border-t pt-4">
+                    <h3 className="text-lg font-medium mb-4">Review Actions</h3>
+                    <div className="space-y-4">
+                      <textarea
+                        value={reviewComment}
+                        onChange={(e) => setReviewComment(e.target.value)}
+                        placeholder="Enter review comments here..."
+                        className="w-full px-3 py-2 border rounded-md"
+                        rows={4}
+                      />
+                      <div className="flex space-x-4">
+                        <button
+                          onClick={handleApprove}
+                          disabled={isSaving}
+                          className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:opacity-50"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={handleRequestChanges}
+                          disabled={isSaving || !reviewComment.trim()}
+                          className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 disabled:opacity-50"
+                        >
+                          Request Changes
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
           </div>

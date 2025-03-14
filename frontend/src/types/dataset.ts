@@ -1,3 +1,5 @@
+import { DatasetStatus } from "../constants";
+
 export interface Column {
   name: string;
   dataType: string;
@@ -26,6 +28,18 @@ export interface MetadataHistoryEntry {
   created_at: string;
 }
 
+export interface VersionHistoryEntry {
+  _id?: string;
+  versionNumber: number;
+  filePath: string;
+  fileSize: number;
+  fileType: string;
+  originalFilename: string;
+  uploadDate: string;
+  rowCount: number;
+  columns: Column[];
+}
+
 export interface Dataset {
   _id: string;
   filename: string;
@@ -34,12 +48,14 @@ export interface Dataset {
   fileType: string;
   uploadDate: string;
   rowCount: number;
-  columns: string[];
+  columns: Column[];
   filePath: string;
   status: DatasetStatus;
   metadata: DatasetMetadata;
   ai_metadata: DatasetMetadata;
   metadata_history?: MetadataHistoryEntry[];
+  versions?: VersionHistoryEntry[];
+  currentVersion?: number;
 }
 
 export interface ApiResponse<T> {
@@ -47,12 +63,3 @@ export interface ApiResponse<T> {
   message?: string;
   data: T | null;
 }
-
-export type DatasetStatus =
-  | "uploaded"
-  | "processed"
-  | "metadata_generated"
-  | "metadata_failed"
-  | "under_review"
-  | "changes_requested"
-  | "approved";

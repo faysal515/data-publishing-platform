@@ -5,7 +5,21 @@ import { datasetService } from "../services/datasetService";
 import { Dataset } from "../types/dataset";
 import DatasetInfo from "./DatasetInfo";
 
-export default function DragAndDrop() {
+interface DragAndDropProps {
+  uploadType?: "new" | "version";
+  datasetId?: string;
+  onUploadSuccess?: (dataset: Dataset) => void;
+  minHeight?: string;
+  showPreview?: boolean;
+}
+
+export default function DragAndDrop({
+  uploadType = "new",
+  datasetId,
+  onUploadSuccess,
+  minHeight = "300px",
+  showPreview = true,
+}: DragAndDropProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedDataset, setUploadedDataset] = useState<Dataset | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -15,15 +29,42 @@ export default function DragAndDrop() {
 
     setIsUploading(true);
     try {
-      const response = await datasetService.uploadDataset(selectedFile);
-      setUploadedDataset(response.data);
-      setSelectedFile(null);
-      toast.success(response.message);
+      let response;
+
+      if (uploadType === "version" && datasetId) {
+        // Upload new version
+        response = await datasetService.uploadNewVersion(
+          datasetId,
+          selectedFile
+        );
+      } else {
+        // Upload new dataset
+        response = await datasetService.uploadDataset(selectedFile);
+      }
+
+      if (response.success) {
+        setUploadedDataset(response.data);
+        setSelectedFile(null);
+        toast.success(
+          response.message ||
+            `File ${
+              uploadType === "version" ? "version" : ""
+            } uploaded successfully`
+        );
+
+        if (onUploadSuccess && response.data) {
+          onUploadSuccess(response.data);
+        }
+      } else {
+        toast.error(response.message || "Upload failed");
+      }
     } catch (error: any) {
       console.error("Upload error:", error);
       toast.error(
         error.response?.data?.message ||
-          "Error uploading file. Please try again."
+          `Error uploading ${
+            uploadType === "version" ? "new version" : "file"
+          }. Please try again.`
       );
     } finally {
       setIsUploading(false);
@@ -89,7 +130,7 @@ export default function DragAndDrop() {
             flex-col
             items-center
             justify-center
-            min-h-[300px]
+            min-h-[${minHeight}]
             ${
               isDragActive
                 ? "border-blue-500 bg-blue-50"
@@ -148,6 +189,11 @@ export default function DragAndDrop() {
                 <p className="text-sm text-gray-500">
                   Supports CSV and Excel files (max 10MB)
                 </p>
+                {uploadType === "version" && (
+                  <p className="text-sm text-blue-500 mt-2">
+                    Uploading a new version of this dataset
+                  </p>
+                )}
               </>
             )}
           </div>
@@ -187,14 +233,18 @@ export default function DragAndDrop() {
                 onClick={handleUpload}
                 className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
-                Upload File
+                {uploadType === "version"
+                  ? "Upload New Version"
+                  : "Upload File"}
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {uploadedDataset && <DatasetInfo dataset={uploadedDataset} />}
+      {showPreview && uploadedDataset && (
+        <DatasetInfo dataset={uploadedDataset} />
+      )}
     </>
   );
 }
