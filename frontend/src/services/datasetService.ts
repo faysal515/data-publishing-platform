@@ -1,5 +1,5 @@
 import axios from "axios";
-import { ApiResponse, Dataset } from "../types/dataset";
+import { ApiResponse, Dataset, DatasetStatus } from "../types/dataset";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -7,6 +7,11 @@ if (!API_BASE_URL) {
   throw new Error(
     "NEXT_PUBLIC_API_BASE_URL environment variable is not defined"
   );
+}
+
+interface DatasetFilters {
+  categories: string[];
+  statuses: DatasetStatus[];
 }
 
 export const datasetService = {
@@ -74,6 +79,13 @@ export const datasetService = {
       metadata
     );
 
+    return response.data;
+  },
+
+  async getDatasetFilters(): Promise<ApiResponse<DatasetFilters>> {
+    const response = await axios.get<ApiResponse<DatasetFilters>>(
+      `${API_BASE_URL}/datasets/filters`
+    );
     return response.data;
   },
 };

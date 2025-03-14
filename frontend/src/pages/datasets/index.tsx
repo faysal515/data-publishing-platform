@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
-import { Dataset } from "../../types/dataset";
+import { Dataset, DatasetStatus } from "../../types/dataset";
 import DatasetList from "../../components/DatasetList";
 import { datasetService } from "../../services/datasetService";
 import Link from "next/link";
 import { StatusBadge } from "../../components/StatusBadge";
+
+interface Filters {
+  categories: string[];
+  statuses: string[];
+}
 
 export default function DatasetsPage() {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
@@ -11,8 +16,26 @@ export default function DatasetsPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [filters, setFilters] = useState<Filters>({
+    categories: [],
+    statuses: [],
+  });
+
+  useEffect(() => {
+    const fetchFilters = async () => {
+      try {
+        const response = await datasetService.getDatasetFilters();
+        setFilters(response.data);
+      } catch (err) {
+        console.error("Error fetching filters:", err);
+      }
+    };
+
+    fetchFilters();
+  }, []);
 
   useEffect(() => {
     const fetchDatasets = async () => {
@@ -24,7 +47,16 @@ export default function DatasetsPage() {
           search,
           categories: selectedCategories,
         });
-        setDatasets(response.data.datasets);
+
+        // Filter datasets by status client-side if any statuses are selected
+        let filteredDatasets = response.data.datasets;
+        if (selectedStatuses.length > 0) {
+          filteredDatasets = filteredDatasets.filter((dataset: Dataset) =>
+            selectedStatuses.includes(dataset.status)
+          );
+        }
+
+        setDatasets(filteredDatasets);
         setTotalPages(Math.ceil(response.data.pagination.total / 10));
       } catch (err) {
         setError("Failed to load datasets");
@@ -35,7 +67,7 @@ export default function DatasetsPage() {
     };
 
     fetchDatasets();
-  }, [page, search, selectedCategories]);
+  }, [page, search, selectedCategories, selectedStatuses]);
 
   const handleSearch = (newSearch: string) => {
     setSearch(newSearch);
@@ -47,11 +79,12 @@ export default function DatasetsPage() {
     setPage(1); // Reset to first page when categories change
   };
 
-  const handleCategoryToggle = (categoryId: string) => {
-    const newCategories = selectedCategories.includes(categoryId)
-      ? selectedCategories.filter((id) => id !== categoryId)
-      : [...selectedCategories, categoryId];
-    handleCategoriesChange(newCategories);
+  const handleStatusToggle = (status: string) => {
+    const newStatuses = selectedStatuses.includes(status)
+      ? selectedStatuses.filter((s) => s !== status)
+      : [...selectedStatuses, status];
+    setSelectedStatuses(newStatuses);
+    setPage(1); // Reset to first page when statuses change
   };
 
   return (
@@ -89,36 +122,41 @@ export default function DatasetsPage() {
                 Categories
               </h3>
               <div className="space-y-2">
-                {[
-                  {
-                    id: "Agriculture",
-                    label: { en: "Agriculture", ar: "الزراعة" },
-                  },
-                  {
-                    id: "education",
-                    label: { en: "Education", ar: "التعليم" },
-                  },
-                  { id: "economy", label: { en: "Economy", ar: "الاقتصاد" } },
-                  {
-                    id: "environment",
-                    label: { en: "Environment", ar: "البيئة" },
-                  },
-                ].map((category) => (
-                  <label
-                    key={category.id}
-                    className="flex items-center space-x-2"
-                  >
+                {filters.categories.map((category) => (
+                  <label key={category} className="flex items-center space-x-2">
                     <input
                       type="checkbox"
-                      checked={selectedCategories.includes(category.id)}
-                      onChange={() => handleCategoryToggle(category.id)}
+                      checked={selectedCategories.includes(category)}
+                      onChange={() => {
+                        const newCategories = selectedCategories.includes(
+                          category
+                        )
+                          ? selectedCategories.filter((c) => c !== category)
+                          : [...selectedCategories, category];
+                        handleCategoriesChange(newCategories);
+                      }}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700">
-                      {category.label.en}
-                    </span>
-                    <span className="text-sm text-gray-500" dir="rtl">
-                      ({category.label.ar})
+                    <span className="text-sm text-gray-700">{category}</span>
+                  </label>
+                ))}
+              </div>
+
+              {/* Status Filters */}
+              <h3 className="text-sm font-medium text-gray-700 mb-2 mt-6">
+                Status
+              </h3>
+              <div className="space-y-2">
+                {filters.statuses.map((status) => (
+                  <label key={status} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedStatuses.includes(status)}
+                      onChange={() => handleStatusToggle(status)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 capitalize">
+                      {status.replace(/_/g, " ")}
                     </span>
                   </label>
                 ))}
